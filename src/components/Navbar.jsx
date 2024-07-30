@@ -16,17 +16,17 @@ const Navbar = () => {
                 <li className='p-4 text-xl hover:text-[--orange] transition ease-in'>About</li>
                 <li className='p-4 text-xl hover:text-[--orange] transition ease-in'>Contact</li>
             </ul>
-            <div onClick={handleNav} className='block md:hidden'>
-                {nav ? <AiOutlineClose size={25}/> :  <AiOutlineMenu size={25}/>}
+            <div onClick={handleNav} className='z-10 block md:hidden'>
+                {nav ? <AiOutlineClose size={25}/> :  <AiOutlineMenu size={25} />}
                
             </div>
 
-            <div className={nav ? 'fixed top-0 left-0 w-[60%] border-l border-l-gray-900 h-full bg-[#000300] ease-in-out duration-500': 'fixed left-[-100%]'}>
-                <h1 className='w-full pt-4 text-3xl font-bold text-[--orange] m-4 font-customFont'>Tuklas</h1>
+            <div className={nav ? 'fixed top-0 right-0 w-full border-l border-l-gray-900 h-full bg-[#000300] ease-in-out duration-500 z-9 ': 'fixed right-[-100%]'}>
+                <h1 className='w-full pt-20 text-3xl font-bold text-[--orange] mb-2  font-customFont text-center uppercase'>Tuklas</h1>
                 <ul className='p-4 uppercase'>
-                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'>Home</li>
-                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'>About</li>
-                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'>Contact</li> 
+                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in text-center'>Home</li>
+                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in text-center'>About</li>
+                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in text-center'>Contact</li> 
                 </ul>
             </div>
         </div>
