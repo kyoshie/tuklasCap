@@ -1,15 +1,13 @@
 import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import './App.css';
+import Intro  from './components/Intro';
+
 
 function App() {
-
-
   return (
     <>
      <Navbar/>
-     <Hero/>
-
+     <Intro/>
+     
     </>
   )
 }

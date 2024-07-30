@@ -11,20 +11,21 @@
     --orange: orange;
     --blue:#007bff;
     --blue-hover:#0056b3;
-}
 
-*{
+}
+* {
     margin: 0;
     padding: 0;
 }
 
-html{
+html, body{
+    height: 100%;
+    width: 100%;
+}
+
+html {
     background-image: url('background.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-}
-
-body{
-    height: 100vh;
 }
