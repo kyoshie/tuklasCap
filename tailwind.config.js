@@ -6,6 +6,7 @@ export default {
     extend: {
       fontFamily: {
         customFont:['Poppins'],
+        oxygen:['Oxygen']
       }
     },
   },

@@ -11,22 +11,22 @@ const Navbar = () => {
         <div className='flex text-white justify-between items-center h-20 max-w-[1420px] mx-auto px-4 font-customFont cursor-pointer'>
             <h1 className='w-full text-3xl font-bold text-[--orange]'>Tuklas Art Gallery</h1>
             
-            <ul className='hidden md:flex'>
-                <li className='p-4 text-xl hover:text-[--orange] transition ease-in '><a href='/' className={location.pathname === '/' ? 'active' : ''}>Home</a></li>
-                <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/about' className={location.pathname === '/about' ? 'active' : ''}>About</a></li>
-                <li className='p-4 text-xl hover:text-[--orange] transition ease-in'>Contact</li>
+            <ul className='hidden md:flex .fixed'>
+                <li className='p-4 text-xl hover:text-[--orange] transition ease-in '><a href='/' className={location.pathname === '/' ? 'text-[--orange]' : ''}>Home</a></li>
+                <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/about' className={location.pathname === '/about' ? 'text-[--orange]' : ''}>About</a></li>
+                <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/marketplace' className={location.pathname === '/marketplace' ? 'text-[--orange]' : ''}>Marketplace</a></li>
             </ul>
-            <div onClick={handleNav} className='z-10 block md:hidden'>
-                {nav ? <AiOutlineClose size={25}/> :  <AiOutlineMenu size={25} />}
+            <div onClick={handleNav} className='z-10 block md:hidden md:px-1'>
+                {nav ? <AiOutlineClose size={30}/> :  <AiOutlineMenu size={30} />}
                
             </div>
 
             <div className={nav ? 'fixed top-0 right-0 w-full border-l border-l-gray-900 h-full bg-[#000300] ease-in-out duration-500 z-9 ': 'fixed right-[-100%]'}>
                 <h1 className='w-full pt-20 text-3xl font-bold text-[--orange] mb-2  font-customFont text-center uppercase'>Tuklas</h1>
-                <ul className='p-4 uppercase'>
-                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/' className={location.pathname === '/' ? 'active' : ''} >Home</a></li>
-                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/about' className={location.pathname === '/about' ? 'active' : ''}>About</a></li>
-                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'>Contact</li> 
+                <ul className='p-4 text-center uppercase'>
+                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/' className={location.pathname === '/' ? 'text-[--orange]' : ''} >Home</a></li>
+                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/about' className={location.pathname === '/about' ? 'text-[--orange]' : ''}>About</a></li>
+                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/marketplace' className={location.pathname === '/marketplace' ? 'text-[--orange]' : ''}>Marketplace</a></li>
                 </ul>
             </div>
         </div>

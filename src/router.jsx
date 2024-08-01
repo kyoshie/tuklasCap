@@ -2,8 +2,9 @@ import { createBrowserRouter } from "react-router-dom";
 
 import App from './App';
 import Navbar from "./components/Navbar";
-import About from './components/About';
+import About from './pages/About';
 import Intro from './components/Intro';
+import Marketplace from './pages/Marketplace';
 
 
 export const router = createBrowserRouter ([
@@ -21,8 +22,15 @@ export const router = createBrowserRouter ([
       {
         path: "/",
         element: <>
+         <Navbar/>
         <Intro/>
+          </>
+      },
+      {
+        path: "/marketplace",
+        element: <>
         <Navbar/>
+        <Marketplace/>
           </>
       },
 ]);
