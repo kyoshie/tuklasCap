@@ -33,4 +33,10 @@ export const router = createBrowserRouter ([
         <Marketplace/>
           </>
       },
+      {
+        path: "/home",
+        element: <>
+  
+          </>
+      },
 ]);
