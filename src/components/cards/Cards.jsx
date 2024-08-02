@@ -7,10 +7,10 @@ const Cards = () => {
   const [cards, setCards] = useState(data);
 
   return (
-      <div className='grid grid-cols-2 col-span-2 gap-6 pt-4 lg:grid-cols-4 lg:justify-center'>
+      <div>
         {cards.map((item, index) => (
-          <div key={index} className='transition-transform duration-300 bg-transparent border border-gray-500 rounded-lg shadow-lg hover:-translate-y-3'>
-            <img src={item.image} alt={item.name} className='w-full h-[150px] object-cover rounded-t-lg md:h-[200px] '></img>
+          <div key={index} className='mt-3 mr-3 transition-transform duration-300 bg-transparent border border-gray-500 rounded-lg shadow-lg hover:-translate-y-3 '>
+            <img src={item.image} alt={item.name} className='w-full h-[150px] object-cover rounded-t-lg md:h-[200px] lg:h-[200px]'></img>
             <div>
               <p className='font-bold text-center text-white font-oxygen'>{item.name}</p>
               <p className='text-white lg:text-center'> {item.description}</p>
