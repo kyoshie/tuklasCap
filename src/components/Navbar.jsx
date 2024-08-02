@@ -8,7 +8,7 @@ const Navbar = () => {
         setNav(!nav)    
     }
     return(
-        <div className='flex text-white justify-between items-center h-20 max-w-[1420px] mx-auto px-4 font-customFont cursor-pointer'>
+        <div className='sticky top-0 left-0 z-10 bg-[#222831] flex text-white justify-between items-center h-20 max-w-[1420px] mx-auto px-4 font-customFont cursor-pointer'>
             <h1 className='w-full text-3xl font-bold text-[--orange]'>Tuklas Art Gallery</h1>
             
             <ul className='hidden md:flex .fixed'>
