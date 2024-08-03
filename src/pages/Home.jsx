@@ -4,7 +4,7 @@ const Home = () => {
 
   return (
     <div>
-      <h1 className='text-white'>Connected</h1>
+    
     </div>
   );
 }

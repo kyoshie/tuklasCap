@@ -1,7 +1,22 @@
 import React,{ useState } from 'react';
 import {AiOutlineClose, AiOutlineMenu} from 'react-icons/ai';
 
+
 const Navbar = () => {
+    const connectWallet = async () => {
+        if (window.ethereum) {
+            try {
+      // Request account access
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                console.log("Connected to MetaMask!");  
+                 window.location.href = '/home';
+             } catch (error) {
+                console.error(error);
+             }
+    }       else {
+            console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
+  }
+}
     const [nav, setNav] = useState(false)
 
     const handleNav = () => {
@@ -11,10 +26,10 @@ const Navbar = () => {
         <div className='sticky top-0 left-0 z-10 bg-[#222831] flex text-white justify-between items-center h-20 w-full mx-auto px-4 font-customFont cursor-pointer lg:px-[10%]'>
             <h1 className='w-full text-3xl font-bold text-[--orange]'>Tuklas Art Gallery</h1>
             
-            <ul className='hidden md:flex .fixed'>
+            <ul className='hidden md:flex'>
                 <li className='p-4 text-xl hover:text-[--orange] transition ease-in '><a href='/' className={location.pathname === '/' ? 'text-[--orange]' : ''}>Home</a></li>
                 <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/about' className={location.pathname === '/about' ? 'text-[--orange]' : ''}>About</a></li>
-                <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/marketplace' className={location.pathname === '/marketplace' ? 'text-[--orange]' : ''}>Marketplace</a></li>
+                <li className='p-4 '><button className ='text-xl hover:text-[--orange] transition ease-in w-[170px]' onClick={connectWallet}>Connect Wallet</button></li>
             </ul>
             <div onClick={handleNav} className='z-10 block md:hidden md:px-1'>
                 {nav ? <AiOutlineClose size={30}/> :  <AiOutlineMenu size={30} />}
@@ -26,7 +41,7 @@ const Navbar = () => {
                 <ul className='p-4 text-center uppercase'>
                     <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/' className={location.pathname === '/' ? 'text-[--orange]' : ''} >Home</a></li>
                     <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/about' className={location.pathname === '/about' ? 'text-[--orange]' : ''}>About</a></li>
-                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/marketplace' className={location.pathname === '/marketplace' ? 'text-[--orange]' : ''}>Marketplace</a></li>
+                    <li className='p-4 '><button className ='text-xl hover:text-[--orange] transition ease-in w-[170px]' onClick={connectWallet}>Connect Wallet</button></li>
                 </ul>
             </div>
         </div>

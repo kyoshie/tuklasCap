@@ -31,7 +31,7 @@ export const router = createBrowserRouter ([
       {
         path: "/marketplace",
         element: <>
-        <Navbar/>
+        <Homenav/>
         <Marketplace/>
           </>
       },
@@ -40,6 +40,7 @@ export const router = createBrowserRouter ([
         element: <>
         <Homenav/>
         <Home/>
+        <Intro/>
           </>
       },
 ]);
