@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const Home = () => {
+
   return (
     <div>
-      {/* Your component's content goes here */}
+      <h1 className='text-white'>Connected</h1>
     </div>
-  )
+  );
 }
 
-export default Home
+export default Home;

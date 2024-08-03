@@ -3,23 +3,23 @@ import { ReactTyped } from "react-typed";
 import Web3 from 'web3';
 
 
-
-
 const Intro = () => {
+    console.log(window.ethereum)
     const connectWallet = async () => {
         if (window.ethereum) {
             try {
-              
+      // Request account access
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
-                const web3 = new Web3(window.ethereum);
-                window.location.href = '/';
-            } catch (error) {
-                console.error("User denied account access", error);
-            }
-        } else {
+                console.log("Connected to MetaMask!");  
+                 window.location.href = '/home';
+             } catch (error) {
+                console.error(error);
+             }
+    }       else {
             console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
-        }
-    };
+  }
+}
+
     return (
         <div className='text-white'>
             <div className='max-w-[800px] my-[-120px] w-full  mx-auto text-center flex flex-col justify-center mt-[130px]'>

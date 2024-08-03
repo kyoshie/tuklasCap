@@ -5,6 +5,8 @@ import Navbar from "./components/Navbar";
 import About from './pages/About';
 import Intro from './components/Intro';
 import Marketplace from './pages/Marketplace';
+import Home from './pages/Home';
+import Homenav from './components/Homenav';
 
 
 export const router = createBrowserRouter ([
@@ -36,7 +38,8 @@ export const router = createBrowserRouter ([
       {
         path: "/home",
         element: <>
-  
+        <Homenav/>
+        <Home/>
           </>
       },
 ]);
