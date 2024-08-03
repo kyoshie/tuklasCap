@@ -16,9 +16,9 @@ const Cards = () => {
               <p className='text-white lg:text-center'> {item.description}</p>
               
              <div className='flex py-1 mb-1 lg:justify-center'>
-               <p className='mr-5 ml-1 text-[--orange] font-bold'>{item.price}</p>
+               <p className='mr-5 ml-2 text-[--orange] font-bold mt-[5px]'>{item.price}</p>
                <button className='ml-auto mr-2 bg-[--blue] w-[120px] hover:bg-[--blue-hover] transition-all inline-block justify-center 
-                text-white font-customFont rounded-md lg:ml-0 shadow-md border-none cursor-pointer gap-[8px]'>
+                text-white font-customFont rounded-md lg:ml-0 shadow-md border-none cursor-pointer gap-[8px] p-1'>
                  <FontAwesomeIcon icon={faShoppingCart} className='mr-3'/>Buy
                 </button>
              </div>
