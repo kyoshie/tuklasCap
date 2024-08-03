@@ -25,8 +25,8 @@ const Homenav = () => {
             
             <ul className='hidden md:flex'>
                 <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/home' className={location.pathname === '/home' ? 'text-[--orange]' : ''}>Home</a></li>
-                <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/home' className={location.pathname === '/gallery' ? 'text-[--orange]' : ''}>Gallery</a></li>
-                <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/home' className={location.pathname === '/create' ? 'text-[--orange]' : ''}>Create</a></li>
+                <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/gallery' className={location.pathname === '/gallery' ? 'text-[--orange]' : ''}>Gallery</a></li>
+                <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/create' className={location.pathname === '/create' ? 'text-[--orange]' : ''}>Create</a></li>
                 <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/marketplace' className={location.pathname === '/marketplace' ? 'text-[--orange]' : ''}>Marketplace</a></li>
                 <li className='p-4 text-xl'><button className='hover:text-[--orange] transition ease-in' onClick={handleLogout}>Logout</button></li>
             </ul>
@@ -38,8 +38,8 @@ const Homenav = () => {
                 <h1 className='w-full pt-20 text-3xl font-bold text-[--orange] mb-2  font-customFont text-center uppercase'>Tuklas</h1>
                 <ul className='p-4 text-center uppercase'>
                     <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/home' className={location.pathname === '/home' ? 'text-[--orange]' : ''} >Home</a></li>
-                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/home' className={location.pathname === '/gallery' ? 'text-[--orange]' : ''}>Gallery</a></li>
-                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/home' className={location.pathname === '/create' ? 'text-[--orange]' : ''}>Create</a></li>
+                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/gallery' className={location.pathname === '/gallery' ? 'text-[--orange]' : ''}>Gallery</a></li>
+                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/create' className={location.pathname === '/create' ? 'text-[--orange]' : ''}>Create</a></li>
                     <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/marketplace' className={location.pathname === '/marketplace' ? 'text-[--orange]' : ''}>Marketplace</a></li>
                     <li className='p-4 text-xl'><button className='hover:text-[--orange] transition ease-in' onClick={handleLogout}>Logout</button></li>
                 </ul>

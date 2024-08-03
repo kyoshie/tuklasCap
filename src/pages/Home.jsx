@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import Welcome from '../components/Welcome';
+
 
 const Home = () => {
 
   return (
-    <div>
-    
-    </div>
+    <>
+      <Welcome/>
+    </>
   );
 }
 
