@@ -8,7 +8,8 @@ import Marketplace from './pages/Marketplace';
 import Home from './pages/Home';
 import Homenav from './components/Homenav';
 import Gallery from './pages/Gallery';
-
+import Features from './pages/Features';
+import Create from './pages/Create';
 
 export const router = createBrowserRouter ([
     {
@@ -55,7 +56,14 @@ export const router = createBrowserRouter ([
         path: "/create",
         element: <>
         <Homenav/>
-        <create/>
+        <Create/>
+          </>
+      },
+      {
+        path: "/features",
+        element: <>
+        <Navbar/>
+        <Features/>
           </>
       },
 ]);

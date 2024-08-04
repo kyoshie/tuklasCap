@@ -16,6 +16,7 @@ const Navbar = () => {
             <ul className='hidden md:flex'>
                 <li className='p-4 text-xl hover:text-[--orange] transition ease-in '><a href='/' className={location.pathname === '/' ? 'text-[--orange]' : ''}>Home</a></li>
                 <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/about' className={location.pathname === '/about' ? 'text-[--orange]' : ''}>About</a></li>
+                <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/features' className={location.pathname === '/features' ? 'text-[--orange]' : ''}>Features</a></li>
             </ul>
             <div onClick={handleNav} className='z-10 block md:hidden md:px-1'>
                 {nav ? <AiOutlineClose size={30}/> :  <AiOutlineMenu size={30} />}
@@ -27,7 +28,7 @@ const Navbar = () => {
                 <ul className='p-4 text-center uppercase'>
                     <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/' className={location.pathname === '/' ? 'text-[--orange]' : ''} >Home</a></li>
                     <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/about' className={location.pathname === '/about' ? 'text-[--orange]' : ''}>About</a></li>
-                    
+                    <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/features' className={location.pathname === '/features' ? 'text-[--orange]' : ''}>Features</a></li>
                 </ul>
             </div>
         </div>
