@@ -30,7 +30,7 @@ const Intro = () => {
                     <ReactTyped className='pl-2 text-lg text-[--orange] md:text-3xl sm:text-4xl font-bold'
                      strings={['Discover', 'Create', 'Own']} typeSpeed ={90} backSpeed={100} loop/>
                 </div>
-                <p className='text-lg font-bold text-gray-300 md:text-xl'>Grab the Opportunity to Discover, Create, and Own Arts through NFT.</p>
+                <p className='text-lg font-bold text-gray-400 md:text-xl'>Grab the Opportunity to Discover, Create, and Own Arts through NFT.</p>
                 <button className ='text-xl hover:bg-[--blue-hover] transition ease-in w-[200px] bg-[--blue] font-medium my-6
                 mx-auto rounded-md py-2' onClick={connectWallet}>Connect Wallet</button>
             </div>
