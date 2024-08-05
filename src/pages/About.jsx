@@ -3,7 +3,7 @@ import { ReactTyped } from "react-typed";
 
 const About = () => {
   return (
-    <div className='text-white'>
+    <div className='text-white '>
         <div className='w-full my-[-120px] mx-auto text-center flex flex-col justify-center mt-[130px] lg:w-[1240px]'>
           <div className='flex items-center justify-center xl:mt-0 lg:mt-0'>
           <h1 className='text-3xl font-bold md:text-4xl sm:text-2xl md:py-6 xl:text-6xl'>What is</h1>
@@ -21,4 +21,4 @@ const About = () => {
   )
 }
 
-export default About
+export default About;

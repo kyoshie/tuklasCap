@@ -17,7 +17,7 @@ const Feature = ({ icon, title, description }) => {
 
 const Component = () => {
   return (
-    <section className="w-full py-6 text-white md:py-24 lg:py-32 bg-[--background] h-[100vh] lg:fixed sm:overflow-hidden ">
+    <section className="w-full py-6 text-white md:py-24 lg:py-32 bg-[--background] h-full lg:fixed sm:overflow-hidden ">
       <div className="container grid items-center gap-6 px-4 md:ml-3 md:px-6 lg:grid-cols-2 lg:gap-12 lg:ml-50 xl:ml-56">
         <div className="space-y-4">
           <div className="space-y-2 ">

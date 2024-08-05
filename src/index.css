@@ -47,3 +47,14 @@ html {
         width: 100%;
     }
 }
+
+
+@media (max-width:375px) {
+    body{
+        background-image: url('se bg.png');
+    }
+    html, body {
+        height: 100%;
+        width: 100%;
+    }
+}
