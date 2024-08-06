@@ -4,6 +4,9 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",],
   theme: {
     extend: {
+      screens: {
+        'custom-853': '853px',
+      },
       fontFamily: {
         customFont:['Poppins'],
         oxygen:['Oxygen']

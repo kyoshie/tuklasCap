@@ -40,7 +40,10 @@ html {
 
 @media (max-width:640px) {
     body{
-        background-image: url('sm bg.png');
+        background-image: url('se bg.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
     }
     html, body {
         height: 100%;
@@ -52,6 +55,9 @@ html {
 @media (max-width:375px) {
     body{
         background-image: url('se bg.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
     }
     html, body {
         height: 100%;

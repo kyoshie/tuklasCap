@@ -21,8 +21,8 @@ const Intro = () => {
 
     return (
         <div className='text-white'>
-            <div className='max-w-[800px] my-[-120px] w-full  mx-auto text-center flex flex-col justify-center mt-[170px]'>
-                <p className='text-[--orange] font-bold p-2' >DISCOVERING THE BEAUTY OF ARTS</p>
+            <div className='max-w-[800px] my-[-120px] w-full  mx-auto text-center flex flex-col justify-center mt-[170px] lg:my-10 xl:my-32'>
+                <p className='text-[--orange] font-bold p-2 xl:text-xl' >DISCOVERING THE BEAUTY OF ARTS</p>
                 <h1 className='text-4xl font-bold md:text-7xl sm:text-6xl md:py-6 '>Tuklas Art Gallery</h1>
 
                 <div className='flex items-center justify-center'>
