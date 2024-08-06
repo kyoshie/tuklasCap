@@ -12,7 +12,7 @@ const Navbar = () => {
     }
     return(
         <div className='sticky top-0 left-0 z-40 bg-[#222831] flex text-white justify-between items-center h-20 w-full mx-auto px-4 font-customFont cursor-pointer lg:px-[10%]'>
-            <img src='logo.png' className='hidden lg:w-[100px] lg:h-[110px] lg:flex lg:mt-3'></img>
+            <img src='logo.png' className='hidden lg:w-[120px] lg:h-[110px] lg:flex lg:mt-3'></img>
             <h1 className='w-full text-3xl font-bold text-[--orange]'>Tuklas Art Gallery</h1>
             
             <ul className='hidden md:flex'>
