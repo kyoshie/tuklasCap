@@ -7,7 +7,7 @@ const Intro = () => {
     const connectWallet = async () => {
         if (window.ethereum) {
             try {
-      // Request account access
+    
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
                 console.log("Connected to MetaMask!");  
                  window.location.href = '/home';
@@ -15,7 +15,7 @@ const Intro = () => {
                 console.error(error);
              }
     }       else {
-            console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
+            console.log('Use MetamaskWallet');
   }
 }
 
