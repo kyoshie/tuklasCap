@@ -7,7 +7,6 @@ const Intro = () => {
     const connectWallet = async () => {
         if (window.ethereum) {
             try {
-    
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
                 console.log("Connected to MetaMask!");  
                  window.location.href = '/home';
