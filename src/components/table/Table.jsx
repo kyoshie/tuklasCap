@@ -1,9 +1,9 @@
     import React,{useState} from 'react';
-    import DataTable from './data/DataTable'
+  
 
 
     const Table = () => {
-        const [table, setTable] = useState(dataTable)
+       
         return (
             <div className="overflow-x-auto">
                 <table className="table w-full text-center table-xs">
@@ -21,6 +21,14 @@
                     <tbody>
                         <tr>
                             <th>1</th>
+                            <th>12asdfr23</th>
+                            <td>Tuklas</td>
+                            <td>Art about Gojo</td>
+                            <td>Joshua</td>
+                            <td className='text-[--orange]'>0.01ETH</td>
+                        </tr>
+                        <tr>
+                            <th>2</th>
                             <th>12asdfr23</th>
                             <td>Tuklas</td>
                             <td>Art about Gojo</td>
