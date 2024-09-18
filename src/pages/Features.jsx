@@ -17,9 +17,9 @@ const Feature = ({ icon, title, description }) => {
 
 const Component = () => {
   return (
-    <section className="w-full py-6 text-white md:py-24 lg:py-32 bg-[--background] h-screen overflow-y-hidden lg:fixed sm:overflow-hidden md:bg-[--background] md:h-[100vh] md:overflow-hidden lg:overflow-y-scroll 2xl:overflow-hidden ">
+    <section className="w-full py-6 text-white md:py-24 lg:py-32 bg-[--background] h-screen overflow-y-hidden lg:fixed sm:overflow-hidden md:bg-[--background] md:h-[100vh] md:overflow-hidden lg:overflow-y-scroll 2xl:overflow-hidden">
       <div className="container grid items-center gap-6 px-4 md:ml-3 md:px-6 lg:grid-cols-1 lg:gap-10 lg:ml-26 2xl:ml-60 2xl:grid-cols-2">
-        <div className="space-y-4">
+        <div className="space-y-4"> 
           <div className="space-y-2 ">
             <h5 className='text-[--orange] font-medium '>Features</h5>
             <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">
