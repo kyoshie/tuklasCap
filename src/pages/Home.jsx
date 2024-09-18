@@ -25,7 +25,7 @@ const Home = () => {
         console.log('MetaMask is not installed');
         setIsConnected(false);
       }
-      setIsChecking(false); // Stop checking once done
+      setIsChecking(false); 
     };
 
     checkMetaMaskConnection();
