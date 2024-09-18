@@ -8,19 +8,19 @@ const Features = () => {
         <section className="w-full py-12 text-center md:py-24 lg:py-32">
           <div className="container mx-auto">
             <h1 className="text-3xl font-bold tracking-tighter text-white sm:text-4xl md:text-5xl lg:text-6xl">
-              NFT Marketplace Features
+             TUKLAS ART GALLERY FEATURES
             </h1>
             <p className="max-w-2xl mx-auto mt-4 text-gray-400 md:text-xl">
               Discover the powerful features that make our NFT marketplace stand out.
             </p>
           </div>
         </section>
-        <section className="w-full py-12 bg-gray-100 md:py-24 lg:py-32 bg-[--background]">
+        <section className="w-full py-12  md:py-24 lg:py-32 bg-[--background]">
           <div className="container mx-auto">
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               <div className="p-6 transition-shadow bg-white rounded-lg shadow hover:shadow-lg">
                 <WalletIcon className="w-8 h-8 mb-2" />
-                <h3 className="text-lg font-semibold">Easy Trading</h3>
+                <h3 className="text-lg font-semibold">Easy Transactions</h3>
                 <p className="text-gray-600">
                   Buy and sell NFTs with ease using our intuitive interface and secure wallet integration.
                 </p>
@@ -43,7 +43,7 @@ const Features = () => {
                 <ZapIcon className="w-8 h-8 mb-2" />
                 <h3 className="text-lg font-semibold">Low Fees</h3>
                 <p className="text-gray-600">
-                  Benefit from our competitive, low-fee structure to maximize your trading potential.
+                  Benefit from our competitive, low-fee structure to maximize your potential.
                 </p>
               </div>
             </div>
@@ -57,9 +57,12 @@ const Features = () => {
             <p className="max-w-2xl mx-auto mt-4 text-gray-400 md:text-xl">
               Join our vibrant NFT community today and start exploring the world of digital collectibles.
             </p>
-            <button className="px-6 py-3 mt-6 text-lg font-semibold text-white transition-colors bg-blue-600 rounded hover:bg-blue-700">
-              Get Started
-            </button>
+            <a href="/">
+              <button className="px-6 py-3 mt-6 text-lg font-semibold text-white transition-colors bg-blue-600 rounded hover:bg-blue-700">
+                Get Started
+              </button>
+            </a>
+
           </div>
         </section>
       </main>
