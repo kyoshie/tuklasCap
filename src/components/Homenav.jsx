@@ -28,8 +28,27 @@ const Homenav = () => {
                 <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/gallery' className={location.pathname === '/gallery' ? 'text-[--orange]' : ''}>Gallery</a></li>
                 <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/create' className={location.pathname === '/create' ? 'text-[--orange]' : ''}>Create</a></li>
                 <li className='p-4 text-xl hover:text-[--orange] transition ease-in'><a href='/marketplace' className={location.pathname === '/marketplace' ? 'text-[--orange]' : ''}>Marketplace</a></li>
-                <li className='p-4 text-xl'><button className='hover:text-[--orange] transition ease-in' onClick={handleLogout}>Logout</button></li>
             </ul>
+            <div className="dropdown dropdown-end">
+                <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
+                    <div className="w-10 ">
+                        <img className='hidden md:block md:rounded-full'
+                            alt="Tailwind CSS Navbar component"
+                            src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp" />
+                    </div>
+                </div>
+                <ul
+                    tabIndex={0}
+                    className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
+                    <li>
+                        <a className="justify-between">
+                            Profile
+                            <span className="badge">New</span>
+                        </a>
+                    </li>
+                    <li><a onClick={handleLogout}>Logout</a></li>
+                </ul>
+            </div>
             <div onClick={handleNav} className='z-10 block md:hidden md:px-1'>
                 {nav ? <AiOutlineClose size={30} /> : <AiOutlineMenu size={30} />}
             </div>
