@@ -41,12 +41,12 @@ const Homenav = () => {
                     tabIndex={0}
                     className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
                     <li>
-                        <a className="justify-between">
+                        <a className="justify-between text-black">
                             Profile
                             <span className="badge">New</span>
                         </a>
                     </li>
-                    <li><a onClick={handleLogout}>Logout</a></li>
+                    <li><a className='text-black' onClick={handleLogout}>Logout</a></li>
                 </ul>
             </div>
             <div onClick={handleNav} className='z-10 block md:hidden md:px-1'>
