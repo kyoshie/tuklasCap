@@ -1,7 +1,7 @@
 export const dataGallery = [
     {
         id: 1,
-        cid: "Gojo Satoru",
+        name: "Gojo Satoru",
         description: "I am the strongest being alive in the universe",
         image: "arts.jpg"
     },

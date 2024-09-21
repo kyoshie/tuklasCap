@@ -12,6 +12,7 @@ import Features from './pages/Features';
 import Create from './pages/Create';
 import Admin from './pages/Admin';
 
+
 export const router = createBrowserRouter ([
     {
         path: "/",
@@ -73,4 +74,5 @@ export const router = createBrowserRouter ([
           <Admin/>
           </>
       },
+      
 ]);

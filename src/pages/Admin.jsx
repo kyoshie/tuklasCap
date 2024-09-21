@@ -8,14 +8,14 @@ const Admin = () => {
             <aside className="w-64 shadow-md bg-[--background]">
                 <div className="p-4 text-xl font-bold text-white">Tuklas Administrator</div>
                 <nav className="mt-4">
-                    <Link to="" className="flex items-center px-4 py-2 text-white text-[--orange] hover:text-yellow-200">
+                    <a className="flex items-center px-4 py-2 text-[--orange]">
                         <Home className="w-5 h-5 mr-3" />
                         Dashboard
-                    </Link>
-                    <Link to="" className="flex items-center px-4 py-2 text-red-300">
+                    </a>
+                    <a className="flex items-center px-4 py-2 text-red-300">
                         <LogOut className="w-5 h-5 mr-3" />
                         Logout
-                    </Link>
+                    </a>
                 </nav>
             </aside>
 
@@ -26,7 +26,6 @@ const Admin = () => {
                     </div>
                 </header>
 
-                {/* Content */}
                 <div className="p-6">
                     <div className="p-6 bg-white rounded-lg shadow-md">
                         <h2 className="mb-4 text-xl font-semibold text-gray-800">Welcome Tuklas Admin Dashboard</h2>
