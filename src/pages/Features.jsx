@@ -1,9 +1,9 @@
 import React from "react";
-import { WalletIcon, BrushIcon, ShieldCheckIcon, ZapIcon } from "lucide-react"; // Assuming you're using lucide-react for icons
+import { WalletIcon, BrushIcon, ShieldCheckIcon, ZapIcon } from "lucide-react"; 
 
 const Features = () => {
   return (
-    <div className="flex flex-col min-h-screen bg-[--background]">
+    <div className="flex flex-col min-h-screen bg-[--background] ">
       <main className="flex-1">
         <section className="w-full py-12 text-center md:py-24 lg:py-32">
           <div className="container mx-auto">
