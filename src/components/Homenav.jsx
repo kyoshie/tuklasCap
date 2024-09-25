@@ -12,7 +12,7 @@ const Homenav = () => {
     };
 
     const [nav, setNav] = useState(false);
-    const [isOpen, setIsOpen] = useState(false); // Dropdown state
+    const [isOpen, setIsOpen] = useState(false); 
 
     const handleNav = () => {
         setNav(!nav);
@@ -43,7 +43,7 @@ const Homenav = () => {
 
             <div className="relative inline-block text-left">
                 <button onClick={toggleDropdown} className="flex items-center w-10 h-10 space-x-2 ">
-                    <img className="object-cover w-10 h-10 md:rounded-full " src="arts.jpg" alt="User" />
+                    <img className="object-cover w-10 h-10 rounded-full md:rounded-full " src="arts.jpg" alt="User" />
                 </button>
                              
                 {isOpen && (

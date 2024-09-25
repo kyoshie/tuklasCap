@@ -8,11 +8,11 @@ const Admin = () => {
             <aside className="w-64 shadow-md bg-[--background]">
                 <div className="p-4 text-xl font-bold text-white">Tuklas Administrator</div>
                 <nav className="mt-4">
-                    <a className="flex items-center px-4 py-2 text-[--orange]">
+                    <a className="flex items-center px-4 py-2 text-[--orange] cursor-pointer">
                         <Home className="w-5 h-5 mr-3" />
                         Dashboard
                     </a>
-                    <a className="flex items-center px-4 py-2 text-red-300">
+                    <a className="flex items-center px-4 py-2 text-red-300 cursor-pointer">
                         <LogOut className="w-5 h-5 mr-3" />
                         Logout
                     </a>
