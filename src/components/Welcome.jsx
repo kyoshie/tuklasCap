@@ -4,7 +4,7 @@ import { ReactTyped } from "react-typed";
 const Welcome = () => {
   return (
     <div className='text-white'>
-            <div className='max-w-[800px] my-[-120px] w-full  mx-auto text-center flex flex-col justify-center mt-[170px]'>
+            <div className='max-w-[800px] my-[-120px] w-full  mx-auto text-center flex flex-col justify-center mt-[100px]'>
                 <p className='text-[--orange] font-bold p-2' >DISCOVERING THE BEAUTY OF ARTS</p>
                 <h1 className='text-4xl font-bold md:text-7xl sm:text-6xl md:py-6 '>Welcome to Tuklas Art Gallery</h1>
 
