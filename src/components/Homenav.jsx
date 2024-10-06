@@ -12,7 +12,8 @@ const Homenav = () => {
     };
 
     const [nav, setNav] = useState(false);
-    const [isOpen, setIsOpen] = useState(false); 
+    const [isOpen, setIsOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false); // State for profile modal
 
     const handleNav = () => {
         setNav(!nav);
@@ -20,6 +21,10 @@ const Homenav = () => {
 
     const toggleDropdown = () => {
         setIsOpen(!isOpen);
+    };
+
+    const toggleProfileModal = () => {
+        setIsProfileOpen(!isProfileOpen);
     };
 
     return (
@@ -42,28 +47,66 @@ const Homenav = () => {
             </ul>
 
             <div className="relative inline-block text-left">
-                <button onClick={toggleDropdown} className="flex items-center w-10 h-10 space-x-2 ">
-                    <img className="object-cover w-10 h-10 rounded-full md:rounded-full " src="arts.jpg" alt="User" />
+                <button onClick={toggleDropdown} className="flex items-center w-10 h-10 space-x-2">
+                    <img className="object-cover w-10 h-10 rounded-full md:rounded-full" src="arts.jpg" alt="User" />
                 </button>
                              
                 {isOpen && (
                     <div className="absolute right-0 w-48 mt-2 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                         <div className="py-1">
-                            <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <button
+                                onClick={toggleProfileModal}
+                                className="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
+                            >
                                 Profile
-                            </a>
-                            <a href= "/transaction" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            </button>
+                            <a href="/transaction" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 Transaction History
                             </a>
-                            <a onClick={handleLogout} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <button
+                                onClick={handleLogout}
+                                className="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
+                            >
                                 Logout
-                            </a>
+                            </button>
                         </div>
                     </div>
                 )}
             </div>
 
-          
+            {/* Profile Modal */}
+            {isProfileOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="w-11/12 max-w-md p-6 bg-white rounded-lg shadow-lg">
+                        <div className="flex justify-end">
+                            <button
+                                onClick={toggleProfileModal}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        <div className="text-center">
+                            <img
+                                className="w-24 h-24 mx-auto mb-4 rounded-full"
+                                src="arts.jpg" 
+                                alt="Profile"
+                            />
+                            <h2 className="mb-2 text-xl font-bold text-black">Kyoshie.Love.Den</h2>
+                            <p className="mb-2 text-gray-600">Wallet Address: 0x123...456</p>
+                            <p className="mb-4 text-gray-600">I am Gojo Satoru</p>
+                            <button
+                                className="px-4 py-2 text-white bg-green-500 rounded"
+                                onClick={() => alert("Edit Profile Clicked")}
+                            >
+                                Edit Profile
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div onClick={handleNav} className='z-10 block md:hidden md:px-1'>
                 {nav ? <AiOutlineClose size={30} /> : <AiOutlineMenu size={30} />}
             </div>

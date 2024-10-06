@@ -18,7 +18,7 @@ function CreateNFT() {
   };
 
   return (
-    <div className="h-[100vh] w-full md:fixed bg-[--background] overflow-hidden md:overflow-hidden md:justify-center md:items-start md:flex">
+    <div className="h-[100vh] w-full md:fixed bg-[--background] md:overflow-auto md:justify-center md:items-start md:flex">
       <div className= "max-w-md p-6 mx-4 align-middle bg-white rounded-lg shadow-md md:w-[900px] md:my-6">
       <h2 className="mb-6 text-3xl font-bold text-center text-black md:text-center md:mb-3">Create New NFT</h2>
         <form onSubmit={handleSubmit}>
