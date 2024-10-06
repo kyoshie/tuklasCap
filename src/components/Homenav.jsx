@@ -55,6 +55,10 @@ const Homenav = () => {
                             <a onClick={handleLogout} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 Logout
                             </a>
+                           
+                            <a href= "/transaction" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                Transaction History
+                            </a>
                         </div>
                     </div>
                 )}
@@ -79,9 +83,6 @@ const Homenav = () => {
                     </li>
                     <li className='p-4 text-xl hover:text-[--orange] transition ease-in'>
                         <a href='/marketplace' className={location.pathname === '/marketplace' ? 'text-[--orange]' : ''}>Marketplace</a>
-                    </li>
-                    <li className='p-4 text-xl'>
-                        <button className='hover:text-[--orange] transition ease-in' onClick={handleLogout}>Logout</button>
                     </li>
                 </ul>
             </div>

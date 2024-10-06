@@ -11,7 +11,7 @@ import Gallery from './pages/Gallery';
 import Features from './pages/Features';
 import Create from './pages/Create';
 import Admin from './pages/Admin';
-
+import Transaction from './pages/Transaction';
 
 export const router = createBrowserRouter ([
     {
@@ -72,6 +72,13 @@ export const router = createBrowserRouter ([
         path: "/admin",
         element: <>
           <Admin/>
+          </>
+      },
+      {
+        path: "/transaction",
+        element: <>
+          <Homenav/>
+          <Transaction/>
           </>
       },
       
