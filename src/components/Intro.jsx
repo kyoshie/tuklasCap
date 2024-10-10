@@ -4,19 +4,47 @@ import { ReactTyped } from "react-typed";
 
 
 const Intro = () => {
+    const saveWalletAddress = async (walletAddress) => {
+        try {
+            const response = await fetch('http://localhost:5000/api/saveWallet', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ walletAddress })
+            });
+            
+            if (response.ok) {
+                console.log("Wallet address saved successfully!");
+            } else {
+                console.error("Failed to save wallet address.");
+            }
+        } catch (error) {
+            console.error("Error saving wallet address:", error);
+        }
+    }
+    
     const connectWallet = async () => {
         if (window.ethereum) {
             try {
-                await window.ethereum.request({ method: 'eth_requestAccounts' });
-                console.log("Connected to MetaMask!");  
-                 window.location.href = '/home';
-             } catch (error) {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const walletAddress = accounts[0];
+                console.log("Connected to MetaMask with address:", walletAddress);
+    
+                // Call the function to send wallet address to your backend
+                saveWalletAddress(walletAddress);
+    
+                // Redirect after login
+                window.location.href = '/home';
+            } catch (error) {
                 console.error(error);
-             }
-    }       else {
+            }
+        } else {
             console.log('Use MetamaskWallet');
-  }
-}
+        }
+    }
+    
+    
 
     return (
         <div className='text-white'>
