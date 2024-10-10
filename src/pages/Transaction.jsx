@@ -10,15 +10,6 @@ const Transaction = () => {
             <Transact/>
         </div>
 
-
-
-
-
-
-
-
-
-
     );
 }
 
