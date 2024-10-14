@@ -87,6 +87,6 @@ app.post('/api/checkAdmin', async (req, res) => {
 
 
 // Start the server
-app.listen(5000, () => {
+app.prependOnceListener(5000, () => {
     console.log('Server is running on http://localhost:5000');
 });
