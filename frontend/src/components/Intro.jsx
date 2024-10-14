@@ -20,9 +20,14 @@ const Intro = () => {
                     body: JSON.stringify({ walletAddress })
                 });
     
+                // Log the raw response from the server
+                console.log("Raw response from server:", response);
+    
                 if (response.ok) {
                     console.log("Wallet address saved successfully!");
-                    
+                    const result = await response.json();
+                    console.log("Response JSON:", result);
+    
                     // Now check if the user is admin
                     const checkAdminResponse = await fetch('http://localhost:5000/api/checkAdmin', {
                         method: 'POST',
@@ -31,30 +36,31 @@ const Intro = () => {
                         },
                         body: JSON.stringify({ walletAddress })
                     });
-                    
+    
                     if (checkAdminResponse.ok) {
                         const { isAdmin } = await checkAdminResponse.json();
                         if (isAdmin) {
-                            // Redirect to admin page
+                            console.log("User is admin, redirecting...");
                             window.location.href = '/admin';
                         } else {
-                            // Redirect to user page
                             window.location.href = '/home';
                         }
                     } else {
                         console.error("Failed to check admin status.");
                     }
-
+    
                 } else {
-                    console.error("Failed to save wallet address.");
+                    const errorData = await response.json();
+                    console.error("Failed to save wallet address. Error:", errorData);
                 }
             } catch (error) {
-                console.error("Error connecting to wallet:", error);
+                console.error("Error connecting to wallet or interacting with the server:", error);
             }
         } else {
             console.log('Please install MetaMask.');
         }
     };
+    
 
     return (
         <div className='text-white'>

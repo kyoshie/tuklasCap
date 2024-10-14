@@ -1,6 +1,6 @@
 const express = require('express');
 const { Client } = require('pg'); // PostgreSQL client
-const cors = require ('cors');
+const cors = require('cors');
 
 const app = express();
 app.use(cors()); // Enable CORS
@@ -17,7 +17,18 @@ const client = new Client({
 
 client.connect();
 
-// API endpoint to save wallet address
+client.connect(err => {
+    if (err) {
+        console.error('Connection error:', err.stack);
+        process.exit(1);  // Exit the application if connection fails
+    } else {
+        console.log('Connected to the database');
+    }
+});
+
+
+// API endpoint to save wallet address with upsert
+// API endpoint to save wallet address with upsert
 app.post('/api/saveWallet', async (req, res) => {
     const { walletAddress } = req.body;
 
@@ -26,9 +37,19 @@ app.post('/api/saveWallet', async (req, res) => {
     }
 
     try {
-        const query = 'INSERT INTO users (walletAddress) VALUES ($1) RETURNING *';
-        const values = [walletAddress];
-        const result = await client.query(query, values);
+        // Assign the role based on the wallet address
+        const adminWallet = '0x784a2430a204cCB93Fb9010008435e0A3cCA5675'; // Admin wallet address
+        let role = (walletAddress.toLowerCase() === adminWallet.toLowerCase()) ? 'admin' : 'user';  // Assign admin if it matches
+
+        // Upsert wallet address with role
+        const upsertQuery = `
+            INSERT INTO users (walletAddress, role)
+            VALUES ($1, $2)
+            ON CONFLICT (walletAddress) DO UPDATE
+            SET role = EXCLUDED.role
+            RETURNING *;
+        `;
+        const result = await client.query(upsertQuery, [walletAddress, role]);
 
         res.status(200).json({ success: true, user: result.rows[0] });
     } catch (error) {
@@ -37,6 +58,8 @@ app.post('/api/saveWallet', async (req, res) => {
     }
 });
 
+
+// API endpoint to check if user is admin
 app.post('/api/checkAdmin', async (req, res) => {
     const { walletAddress } = req.body;
 
@@ -67,7 +90,3 @@ app.post('/api/checkAdmin', async (req, res) => {
 app.listen(5000, () => {
     console.log('Server is running on http://localhost:5000');
 });
-
-
-
-
