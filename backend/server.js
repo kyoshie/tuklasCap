@@ -15,8 +15,6 @@ const client = new Client({
     port: 5432,
 });
 
-client.connect();
-
 client.connect(err => {
     if (err) {
         console.error('Connection error:', err.stack);
@@ -26,8 +24,8 @@ client.connect(err => {
     }
 });
 
+// Your API routes (with no additional calls to `client.connect()`)
 
-// API endpoint to save wallet address with upsert
 // API endpoint to save wallet address with upsert
 app.post('/api/saveWallet', async (req, res) => {
     const { walletAddress } = req.body;
@@ -37,9 +35,8 @@ app.post('/api/saveWallet', async (req, res) => {
     }
 
     try {
-        // Assign the role based on the wallet address
-        const adminWallet = '0x784a2430a204cCB93Fb9010008435e0A3cCA5675'; // Admin wallet address
-        let role = (walletAddress.toLowerCase() === adminWallet.toLowerCase()) ? 'admin' : 'user';  // Assign admin if it matches
+        const adminWallet = '0x784a2430a204cCB93Fb9010008435e0A3cCA5675';
+        let role = (walletAddress.toLowerCase() === adminWallet.toLowerCase()) ? 'admin' : 'user';
 
         // Upsert wallet address with role
         const upsertQuery = `
@@ -57,7 +54,6 @@ app.post('/api/saveWallet', async (req, res) => {
         res.status(500).json({ error: 'Failed to save wallet address' });
     }
 });
-
 
 // API endpoint to check if user is admin
 app.post('/api/checkAdmin', async (req, res) => {
@@ -85,8 +81,7 @@ app.post('/api/checkAdmin', async (req, res) => {
     }
 });
 
-
 // Start the server
-app.prependOnceListener(5000, () => {
+app.listen(5000, () => {
     console.log('Server is running on http://localhost:5000');
 });
