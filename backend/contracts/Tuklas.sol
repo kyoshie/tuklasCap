@@ -108,3 +108,6 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
         payable(owner()).transfer(address(this).balance);
     }
 }
+
+
+

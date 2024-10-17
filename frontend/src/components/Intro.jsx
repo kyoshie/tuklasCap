@@ -1,5 +1,5 @@
 import React from 'react';
-import { ReactTyped } from "react-typed";
+import {ReactTyped} from 'react-typed';
 
 const Intro = () => {
     const connectWallet = async () => {
@@ -8,10 +8,13 @@ const Intro = () => {
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 const walletAddress = accounts[0];
                 console.log("Connected to MetaMask with address:", walletAddress);
-    
+
+                // Save wallet address to local storage
+                localStorage.setItem('walletAddress', walletAddress);
+
                 // Logging before fetch
                 console.log("Attempting to save wallet address:", walletAddress);
-    
+
                 const response = await fetch('http://localhost:5000/api/saveWallet', {
                     method: 'POST',
                     headers: {
@@ -19,15 +22,15 @@ const Intro = () => {
                     },
                     body: JSON.stringify({ walletAddress })
                 });
-    
+
                 // Log the raw response from the server
                 console.log("Raw response from server:", response);
-    
+
                 if (response.ok) {
                     console.log("Wallet address saved successfully!");
                     const result = await response.json();
                     console.log("Response JSON:", result);
-    
+
                     // Now check if the user is admin
                     const checkAdminResponse = await fetch('http://localhost:5000/api/checkAdmin', {
                         method: 'POST',
@@ -36,7 +39,7 @@ const Intro = () => {
                         },
                         body: JSON.stringify({ walletAddress })
                     });
-    
+
                     if (checkAdminResponse.ok) {
                         const { isAdmin } = await checkAdminResponse.json();
                         if (isAdmin) {
@@ -48,7 +51,7 @@ const Intro = () => {
                     } else {
                         console.error("Failed to check admin status.");
                     }
-    
+
                 } else {
                     const errorData = await response.json();
                     console.error("Failed to save wallet address. Error:", errorData);
@@ -60,7 +63,6 @@ const Intro = () => {
             console.log('Please install MetaMask.');
         }
     };
-    
 
     return (
         <div className='text-white'>
