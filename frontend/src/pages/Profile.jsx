@@ -7,6 +7,7 @@ const ProfileModal = ({ walletAddress, closeModal }) => {
   const [username, setUsername] = useState(""); // Username state
   const [bio, setBio] = useState(""); // Bio state
   const [profilePic, setProfilePic] = useState(null); // Profile picture state
+  const [profilePicName, setProfilePicName] = useState(""); // Profile picture name state
   const [profilePicUrl, setProfilePicUrl] = useState(""); // Profile picture URL state
 
   useEffect(() => {
@@ -36,7 +37,9 @@ const ProfileModal = ({ walletAddress, closeModal }) => {
   };
 
   const handleProfilePicChange = (event) => {
-    setProfilePic(event.target.files[0]); // Set selected profile picture file
+    const file = event.target.files[0];
+    setProfilePic(file); // Set selected profile picture file
+    setProfilePicName(file ? file.name : ""); // Set selected profile picture name
   };
 
   const handleSaveChanges = async () => {
@@ -83,10 +86,11 @@ const ProfileModal = ({ walletAddress, closeModal }) => {
               alt="Profile"
             />
             <h2 className="mb-2 text-xl font-bold text-black">{username}</h2>
-            <p className="mb-2 text-black">
+            <p className="mb-2 text-gray-600">
               Wallet Address: {walletAddress}
             </p>
-            <p className="mb-4 text-gray-600">{bio}</p>
+            <p className="mb-2 text-gray-600">
+              Bio: {bio}</p>
             <button
               className="px-4 py-2 text-white bg-green-500 rounded"
               onClick={toggleEditModal} // Show edit modal when clicked
@@ -111,7 +115,7 @@ const ProfileModal = ({ walletAddress, closeModal }) => {
             </div>
 
             <div className="text-center">
-              <h2 className="mb-4 text-xl font-bold">Edit Profile</h2>
+              <h2 className="mb-4 text-xl font-bold text">Edit Profile</h2>
               <input
                 type="text"
                 value={username}
@@ -131,6 +135,9 @@ const ProfileModal = ({ walletAddress, closeModal }) => {
                 onChange={handleProfilePicChange}
                 className="w-full px-3 py-2 mb-4"
               />
+              {profilePicName && (
+                <p className="mb-4 text-gray-600">Selected file: {profilePicName}</p>
+              )}
               <button
                 className="px-4 py-2 mr-2 text-white bg-green-500 rounded"
                 onClick={handleSaveChanges}

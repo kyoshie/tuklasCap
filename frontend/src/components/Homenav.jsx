@@ -2,15 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { AiOutlineClose, AiOutlineMenu } from 'react-icons/ai';
 import { useNavigate } from 'react-router-dom';
 import Profile from '../pages/Profile';
+import axios from 'axios';
 
 const Homenav = () => {
     const navigate = useNavigate();
     const [walletAddress, setWalletAddress] = useState(null);
+    const [profilePicUrl, setProfilePicUrl] = useState(null);
 
     useEffect(() => {
         const address = localStorage.getItem('walletAddress');
         setWalletAddress(address);
+        if (address) {
+            fetchUserData(address);
+        }
     }, []);
+
+    const fetchUserData = async (address) => {
+        try {
+            const response = await axios.get(`http://localhost:5000/api/getProfile/${address}`);
+            const { profilePic } = response.data;
+            if (profilePic) {
+                setProfilePicUrl(`data:image/jpeg;base64,${profilePic}`);
+            }
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+        }
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('walletAddress');
@@ -55,7 +72,7 @@ const Homenav = () => {
 
             <div className="relative inline-block text-left">
                 <button onClick={toggleDropdown} className="flex items-center w-10 h-10 space-x-2">
-                    <img className="object-cover w-10 h-10 rounded-full md:rounded-full" src="arts.jpg" alt="User" />
+                    <img className="object-cover w-10 h-10 rounded-full md:rounded-full" src={profilePicUrl || "arts.jpg"} alt="User" />
                 </button>
 
                 {isOpen && (

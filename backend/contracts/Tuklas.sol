@@ -11,7 +11,7 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
     struct Art {
         uint256 id;
         string title;
-        string uri; // IPFS hash or URL to the artwork metadata (e.g., IPFS hash)
+        string uri;
         address payable artist;
         uint256 price;
         bool isApproved;
@@ -30,8 +30,8 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
     event ArtSold(uint256 artId, address buyer);
     event EtherReceived(address from, uint256 amount);
 
-    // Constructor to set the token name and symbol
-    constructor() ERC721("TuklasArt", "TUKLAS") {}
+    // Constructor to set the token name, symbol, and initialize the owner
+    constructor() ERC721("TuklasArt", "TUKLAS") Ownable(msg.sender) {}
 
     // Function to submit a new art piece
     function submitArt(
@@ -108,6 +108,3 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
         payable(owner()).transfer(address(this).balance);
     }
 }
-
-
-

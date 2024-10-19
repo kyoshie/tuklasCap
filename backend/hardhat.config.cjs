@@ -1,7 +1,9 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-toolbox");
 
 
 require("dotenv").config();
+
 
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -13,4 +15,12 @@ module.exports = {
       accounts: [`0x${process.env.PRIVATE_KEY}`], // Ensure PRIVATE_KEY is correct
     },
   },
+  etherscan:{
+    apiKey: {
+      arbitrumSepolia: process.env.ARBSEP_API
+    }
+  },
+  sourcify: {
+    enabled: true,
+  }
 };
