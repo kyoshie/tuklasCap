@@ -1,9 +1,6 @@
 import express from "express";
-import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
 import { prisma } from "../database.js";
-
-dotenv.config(); // Load environment variables
+import { generateToken } from "../jwt.js";
 
 const router = express.Router();
 
@@ -29,14 +26,8 @@ router.post("/saveWallet", async (req, res) => {
             create: { walletAddress: walletAddress, role: role },
         });
 
-        // Create JWT token
-        const token = jwt.sign(
-            { userId: user.id, role },
-            process.env.JWT_SECRET,
-            { expiresIn: "1h" }
-        );
-
-        res.status(200).json({ success: true, user: result.rows[0], token });
+        const token = generateToken(user); // Generate a JWT token
+        res.status(200).json({ success: true, user, token });
     } catch (error) {
         console.error("Error saving wallet address:", error);
         res.status(500).json({ error: "Failed to save wallet address" });

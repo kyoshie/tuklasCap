@@ -46,12 +46,19 @@ CREATE TABLE "Transaction" (
     "id" SERIAL NOT NULL,
     "buyerId" INTEGER NOT NULL,
     "listingId" INTEGER NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Transaction_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_walletAddress_key" ON "User"("walletAddress");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ListApproval_listingId_key" ON "ListApproval"("listingId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Transaction_listingId_key" ON "Transaction"("listingId");
 
 -- AddForeignKey
 ALTER TABLE "Artwork" ADD CONSTRAINT "Artwork_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

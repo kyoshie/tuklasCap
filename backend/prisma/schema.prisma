@@ -43,15 +43,15 @@ model Listing {
   price     Int
   isSold    Boolean @default(false)
 
-  artwork      Artwork        @relation(fields: [artworkId], references: [id])
-  transactions Transaction[]
-  approvals    ListApproval[]
+  artwork      Artwork       @relation(fields: [artworkId], references: [id])
+  transactions Transaction?
+  approvals    ListApproval?
 }
 
 model ListApproval {
   id        Int    @id @default(autoincrement())
   adminId   Int
-  listingId Int
+  listingId Int    @unique
   status    String
 
   admin   User    @relation(fields: [adminId], references: [id])
@@ -59,9 +59,10 @@ model ListApproval {
 }
 
 model Transaction {
-  id        Int @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   buyerId   Int
-  listingId Int
+  listingId Int      @unique
+  date      DateTime @default(now())
 
   buyer   User    @relation(fields: [buyerId], references: [id])
   listing Listing @relation(fields: [listingId], references: [id])
