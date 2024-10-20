@@ -1,7 +1,6 @@
-const express = require('express');
-const router = express.Router()
-const client = require('../database')
-
+import express from 'express';
+const router = express.Router();
+import {client} from '../database.js';
 
 // API endpoint to save wallet address with upsert
 router.post('/saveWallet', async (req, res) => {
@@ -58,5 +57,4 @@ router.post('/checkAdmin', async (req, res) => {
     }
 });
 
-
-module.exports = router;
+export default router;

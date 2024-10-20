@@ -1,6 +1,5 @@
-const express = require('express');
-const cors = require('cors');
-
+import express from 'express';
+import cors from 'cors';
 
 
 const app = express();
@@ -9,11 +8,8 @@ app.use(express.json());
 
 // PostgreSQL client setup
 
-const walletRoute = require("./routes/wallet");
-const profileRoute = require("./routes/profile")
-
-
-
+import walletRoute from "./routes/wallet.js";
+import profileRoute from "./routes/profile.js";
 
 
 app.use('/api', walletRoute)
