@@ -5,6 +5,7 @@ import { verifyToken } from "../jwt.js";
 const router = express.Router();
 
 router.get("/arts", async (req, res) => {
+    // Get the owned arts of the user
     const token = req.headers.authorization; // Get the token from the headers
 
     if (!token) {
@@ -32,6 +33,7 @@ router.get("/arts", async (req, res) => {
 });
 
 router.get("/arts/listings", async (req, res) => {
+    // For the marketplace
     try {
         const approvals = await prisma.listApproval.findMany({
             where: { status: "APPROVED" },
