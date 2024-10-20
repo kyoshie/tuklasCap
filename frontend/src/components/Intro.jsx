@@ -1,10 +1,16 @@
-import React from 'react';
-import {ReactTyped} from 'react-typed';
+import React, { useState } from 'react';
+import { ReactTyped } from 'react-typed';
 
 const Intro = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
     const connectWallet = async () => {
         if (window.ethereum) {
+            setLoading(true); // Set loading to true
+            setError(''); // Clear any previous errors
             try {
+                // Request account access
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 const walletAddress = accounts[0];
                 console.log("Connected to MetaMask with address:", walletAddress);
@@ -15,23 +21,21 @@ const Intro = () => {
                 // Logging before fetch
                 console.log("Attempting to save wallet address:", walletAddress);
 
+                // Fetch request to save the wallet address
                 const response = await fetch('http://localhost:5000/api/saveWallet', {
-                    method: 'POST',
+                    method: 'POST', // Ensure this matches the route definition
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ walletAddress })
+                    body: JSON.stringify({ walletAddress }) // Sending the wallet address in the body
                 });
 
-                // Log the raw response from the server
-                console.log("Raw response from server:", response);
-
+                // Check the response from the server
                 if (response.ok) {
-                    console.log("Wallet address saved successfully!");
                     const result = await response.json();
-                    console.log("Response JSON:", result);
+                    console.log("Wallet address saved successfully!", result);
 
-                    // Now check if the user is admin
+                    // Check if the user is admin
                     const checkAdminResponse = await fetch('http://localhost:5000/api/checkAdmin', {
                         method: 'POST',
                         headers: {
@@ -49,18 +53,22 @@ const Intro = () => {
                             window.location.href = '/home';
                         }
                     } else {
-                        console.error("Failed to check admin status.");
+                        setError("Failed to check admin status.");
                     }
 
                 } else {
                     const errorData = await response.json();
+                    setError("Failed to save wallet address: " + errorData.error);
                     console.error("Failed to save wallet address. Error:", errorData);
                 }
             } catch (error) {
+                setError("Error connecting to wallet or interacting with the server: " + error.message);
                 console.error("Error connecting to wallet or interacting with the server:", error);
+            } finally {
+                setLoading(false); // Set loading to false regardless of success or error
             }
         } else {
-            console.log('Please install MetaMask.');
+            setError('Please install MetaMask.');
         }
     };
 
@@ -76,8 +84,15 @@ const Intro = () => {
                         strings={['Discover', 'Create', 'Own']} typeSpeed={90} backSpeed={100} loop />
                 </div>
                 <p className='text-lg font-bold text-gray-400 md:text-xl'>Grab the Opportunity to Discover, Create, and Own Arts through NFT.</p>
-                <button className='text-xl hover:bg-[--blue-hover] transition ease-in w-[200px] bg-[--blue] font-medium my-6 mx-auto rounded-md py-2' 
-                onClick={connectWallet}>Connect Wallet</button>
+
+                {error && <p className='text-red-500'>{error}</p>} {/* Display error messages */}
+                <button 
+                    className='text-xl hover:bg-[--blue-hover] transition ease-in w-[200px] bg-[--blue] font-medium my-6 mx-auto rounded-md py-2' 
+                    onClick={connectWallet}
+                    disabled={loading} // Disable button while loading
+                >
+                    {loading ? 'Connecting...' : 'Connect Wallet'}
+                </button>
             </div>
         </div>
     );

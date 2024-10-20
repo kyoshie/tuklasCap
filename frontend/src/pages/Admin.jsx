@@ -1,18 +1,29 @@
 import { Bell, Home, LogOut, Users } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import Table from '../components/table/Table'
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';  // Import useEffect for handling the disconnect effect
+import Table from '../components/table/Table';
 
 const Admin = () => {
+    const navigate = useNavigate(); // Hook to programmatically navigate
+
+    const handleLogout = () => {
+        localStorage.removeItem('walletAddress');
+        console.log('User logged out and MetaMask disconnected');
+        navigate('/');
+    };
+
     return (
         <div className="flex h-screen bg-gray-100">
             <aside className="w-64 shadow-md bg-[--background]">
                 <div className="p-4 text-xl font-bold text-white">Tuklas Administrator</div>
                 <nav className="mt-4">
-                    <a className="flex items-center px-4 py-2 text-[--orange] cursor-pointer">
+                    <Link to="/admin" className="flex items-center px-4 py-2 text-[--orange] cursor-pointer">
                         <Home className="w-5 h-5 mr-3" />
                         Dashboard
-                    </a>
-                    <a className="flex items-center px-4 py-2 text-red-300 cursor-pointer">
+                    </Link>
+                    <a 
+                        onClick={handleLogout} // Use the handleLogout function on click
+                        className="flex items-center px-4 py-2 text-red-300 cursor-pointer">
                         <LogOut className="w-5 h-5 mr-3" />
                         Logout
                     </a>
@@ -32,13 +43,12 @@ const Admin = () => {
                         <p className="text-gray-400">This is the Tuklas Admin Dashboard. Artworks are being accepted here.</p>
                     </div>
                     <div className='mt-10'>
-                        <Table/>
+                        <Table />
                     </div>
                 </div>
             </main>
         </div>
     );
-}
+};
 
-
-export default Admin
+export default Admin;

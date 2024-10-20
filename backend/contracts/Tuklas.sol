@@ -31,7 +31,7 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
     event EtherReceived(address from, uint256 amount);
 
     // Constructor to set the token name, symbol, and initialize the owner
-    constructor() ERC721("TuklasArt", "TUKLAS") Ownable(msg.sender) {}
+    constructor() ERC721("TuklasArt", "TUKLAS") Ownable() {}
 
     // Function to submit a new art piece
     function submitArt(
@@ -51,6 +51,31 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
             false // isMinted is initially false
         );
         emit ArtSubmitted(artCount, _title, msg.sender);
+    }
+
+    // Function to mint a test NFT
+    function mintTestNFT(
+        string memory _title,
+        string memory _uri,
+        uint256 _price
+    ) public onlyOwner {
+        artCount++;
+        artPieces[artCount] = Art(
+            artCount,
+            _title,
+            _uri,
+            payable(msg.sender), // Assign the contract owner as the artist
+            _price,
+            true, // Set isApproved to true for testing
+            false, // isSold is initially false
+            true // Set isMinted to true for testing
+        );
+
+        // Mint the NFT
+        _safeMint(msg.sender, artCount); // Mint the NFT to the owner
+        _setTokenURI(artCount, _uri); // Set the token URI (metadata)
+
+        emit ArtMinted(artCount, msg.sender);
     }
 
     // Admin function to approve art and mint NFT
