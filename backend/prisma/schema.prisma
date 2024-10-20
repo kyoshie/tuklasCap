@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int     @id @default(autoincrement())
+  walletAddress String  @unique
+  username      String?
+  bio           String?
+  role          String  @default("USER")
+  profilePic    Bytes?
+
+  artworks     Artwork[]
+  transactions Transaction[]
+  approvals    ListApproval[]
+}
+
+model Artwork {
+  id          Int    @id @default(autoincrement())
+  ownerId     Int
+  title       String
+  description String
+  imageCID    String
+
+  owner    User      @relation(fields: [ownerId], references: [id])
+  listings Listing[]
+}
+
+model Listing {
+  id        Int     @id @default(autoincrement())
+  artworkId Int
+  price     Int
+  isSold    Boolean @default(false)
+
+  artwork      Artwork        @relation(fields: [artworkId], references: [id])
+  transactions Transaction[]
+  approvals    ListApproval[]
+}
+
+model ListApproval {
+  id        Int    @id @default(autoincrement())
+  adminId   Int
+  listingId Int
+  status    String
+
+  admin   User    @relation(fields: [adminId], references: [id])
+  listing Listing @relation(fields: [listingId], references: [id])
+}
+
+model Transaction {
+  id        Int @id @default(autoincrement())
+  buyerId   Int
+  listingId Int
+
+  buyer   User    @relation(fields: [buyerId], references: [id])
+  listing Listing @relation(fields: [listingId], references: [id])
+}
