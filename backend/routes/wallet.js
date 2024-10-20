@@ -1,6 +1,11 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+import { client } from '../database.js';
+
+dotenv.config(); // Load environment variables
+
 const router = express.Router();
-import {client} from '../database.js';
 
 // API endpoint to save wallet address with upsert
 router.post('/saveWallet', async (req, res) => {
@@ -24,7 +29,10 @@ router.post('/saveWallet', async (req, res) => {
         `;
         const result = await client.query(upsertQuery, [walletAddress, role]);
 
-        res.status(200).json({ success: true, user: result.rows[0] });
+        // Create JWT token
+        const token = jwt.sign({ userId: result.rows[0].id, role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        res.status(200).json({ success: true, user: result.rows[0], token });
     } catch (error) {
         console.error("Error saving wallet address:", error);
         res.status(500).json({ error: 'Failed to save wallet address' });
@@ -56,5 +64,6 @@ router.post('/checkAdmin', async (req, res) => {
         res.status(500).json({ error: 'Failed to check admin status' });
     }
 });
+
 
 export default router;
