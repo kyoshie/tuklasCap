@@ -12,8 +12,10 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
         uint256 id;
         string title;
         string uri;
+        string description;
         address payable artist;
         uint256 price;
+        uint256 resalePrice;
         bool isApproved;
         bool isSold;
         bool isMinted;
@@ -22,60 +24,52 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
     // State variables
     uint256 public artCount = 0;
     mapping(uint256 => Art) public artPieces;
+    address payable public adminWallet;
 
     // Events
-    event ArtSubmitted(uint256 artId, string title, address artist);
+    event ArtSubmitted(
+        uint256 artId,
+        string title,
+        string description,
+        address artist
+    );
     event ArtApproved(uint256 artId);
     event ArtMinted(uint256 artId, address artist);
-    event ArtSold(uint256 artId, address buyer);
+    event ArtSold(uint256 artId, address buyer, uint256 pricePaid);
+    event ArtListedForSale(uint256 artId, uint256 price);
     event EtherReceived(address from, uint256 amount);
 
-    // Constructor to set the token name, symbol, and initialize the owner
-    constructor() ERC721("TuklasArt", "TUKLAS") Ownable() {}
+    // Constructor to set the token name, symbol, and initialize the owner and admin wallet
+    constructor(
+        address payable _adminWallet
+    )
+        ERC721("TuklasArt", "TUKLAS")
+        Ownable(0x784a2430a204cCB93Fb9010008435e0A3cCA5675) // Pass msg.sender as the initial owner
+    {
+        adminWallet = _adminWallet;
+    }
 
     // Function to submit a new art piece
     function submitArt(
         string memory _title,
         string memory _uri,
-        uint256 _price
+        uint256 _price,
+        string memory _description
     ) public {
         artCount++;
         artPieces[artCount] = Art(
             artCount,
             _title,
             _uri,
+            _description,
             payable(msg.sender),
             _price,
+            0, // Initialize resale price
             false, // isApproved is initially false
             false, // isSold is initially false
             false // isMinted is initially false
         );
-        emit ArtSubmitted(artCount, _title, msg.sender);
-    }
-
-    // Function to mint a test NFT
-    function mintTestNFT(
-        string memory _title,
-        string memory _uri,
-        uint256 _price
-    ) public onlyOwner {
-        artCount++;
-        artPieces[artCount] = Art(
-            artCount,
-            _title,
-            _uri,
-            payable(msg.sender), // Assign the contract owner as the artist
-            _price,
-            true, // Set isApproved to true for testing
-            false, // isSold is initially false
-            true // Set isMinted to true for testing
-        );
-
-        // Mint the NFT
-        _safeMint(msg.sender, artCount); // Mint the NFT to the owner
-        _setTokenURI(artCount, _uri); // Set the token URI (metadata)
-
-        emit ArtMinted(artCount, msg.sender);
+        emit ArtSubmitted(artCount, _title, _description, msg.sender);
     }
 
     // Admin function to approve art and mint NFT
@@ -101,7 +95,7 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
         Art storage art = artPieces[_artId];
         require(art.isApproved, "Artwork not approved");
         require(art.isMinted, "Artwork not minted as an NFT yet");
-        require(!art.isSold, "Artwork is already sold");
+        require(!art.isSold, "Artwork is already sold"); // Ensure the artwork is not already sold
         require(msg.value >= art.price, "Insufficient funds");
 
         uint256 excessAmount = msg.value - art.price;
@@ -109,14 +103,28 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
             payable(msg.sender).transfer(excessAmount); // Refund excess to buyer
         }
 
-        // Transfer the payment to the artist
-        art.artist.transfer(art.price);
+        // Transfer the payment to the artist using call to handle potential gas issues
+        (bool success, ) = art.artist.call{value: art.price}("");
+        require(success, "Payment to artist failed");
+
         art.isSold = true;
 
         // Transfer the NFT ownership to the buyer
         _transfer(art.artist, msg.sender, _artId);
 
-        emit ArtSold(_artId, msg.sender);
+        emit ArtSold(_artId, msg.sender, art.price);
+    }
+    // Function to list an art piece for sale
+    function listArtForSale(uint256 _artId, uint256 _price) public {
+        require(
+            ownerOf(_artId) == msg.sender,
+            "Only the owner can list the art for sale"
+        );
+        Art storage art = artPieces[_artId];
+        art.resalePrice = _price; // Set the resale price
+        art.isSold = false; // Mark the art as available for sale
+
+        emit ArtListedForSale(_artId, _price);
     }
 
     // Fallback function to accept ETH sent directly to the contract
