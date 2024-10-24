@@ -86,11 +86,12 @@ const ProfileModal = ({ walletAddress, closeModal }) => {
               alt="Profile"
             />
             <h2 className="mb-2 text-xl font-bold text-black">{username}</h2>
-            <p className="mb-2 text-gray-600">
-              Wallet Address: {walletAddress}
+            <p className="mb-2 text-black">
+              Wallet Address: <span className="text-gray-700">{walletAddress}</span>
             </p>
-            <p className="mb-2 text-gray-600">
-              Bio: {bio}</p>
+            <p className="mb-2 text-black">
+              Bio: <span className="text-gray-700">{bio}</span>
+            </p>
             <button
               className="px-4 py-2 text-white bg-green-500 rounded"
               onClick={toggleEditModal} // Show edit modal when clicked
@@ -115,7 +116,7 @@ const ProfileModal = ({ walletAddress, closeModal }) => {
             </div>
 
             <div className="text-center">
-              <h2 className="mb-4 text-xl font-bold text">Edit Profile</h2>
+              <h2 className="mb-4 text-2xl font-bold text-black text">Edit Profile</h2>
               <input
                 type="text"
                 value={username}

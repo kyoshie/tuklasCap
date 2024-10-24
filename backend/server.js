@@ -3,22 +3,54 @@ import cors from "cors";
 import dotenv from "dotenv";
 import walletRoute from "./routes/wallet.js";
 import profileRoute from "./routes/profile.js";
-import transactionsRoute from "./routes/transactions.js";
 import artsRoute from "./routes/arts.js";
 
+// Load environment variables
 dotenv.config();
 
 const app = express();
+
+// Middleware 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Register the routes with the appropriate path
+// Routes
 app.use("/api", walletRoute);
 app.use("/api", profileRoute);
-app.use("/api", transactionsRoute);
-app.use("/api", artsRoute);
+app.use("/api/arts", artsRoute);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    message: "Something went wrong!"
+  });
+});
+
+// Handle 404 routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found"
+  });
+});
+
+const PORT = process.env.PORT || 5000;
 
 // Start the server
-app.listen(5000, () => {
-    console.log("Server is running on http://localhost:5000");
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled Rejection:', error);
+  process.exit(1);
 });

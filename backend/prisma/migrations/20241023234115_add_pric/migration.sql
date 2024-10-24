@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Artwork" ADD COLUMN     "price" DECIMAL(28,8) NOT NULL DEFAULT 0.000;

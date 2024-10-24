@@ -83,9 +83,6 @@ const Homenav = () => {
                             >
                                 Profile
                             </button>
-                            <a href="/transaction" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                Transaction History
-                            </a>
                             <button
                                 onClick={handleLogout}
                                 className="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"

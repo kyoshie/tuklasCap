@@ -18,52 +18,43 @@ model User {
   walletAddress String  @unique
   username      String?
   bio           String?
-  role          String  @default("USER")
+  role          String  @default("USER") // 'USER' or 'ADMIN'
   profilePic    Bytes?
 
-  artworks     Artwork[]
-  transactions Transaction[]
-  approvals    ListApproval[]
+  artworks  Artwork[]
+  approvals Approval[] // Track approvals by admin
 }
 
 model Artwork {
-  id          Int    @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   ownerId     Int
   title       String
   description String
-  imageCID    String
+  imageCID    String // CID of the image in IPFS
+  isApproved  Boolean @default(false)
+  isMinted    Boolean @default(false)
+  isSold      Boolean @default(false)
+  price       Decimal @default(0.000) @db.Decimal(28, 8)
 
-  owner    User      @relation(fields: [ownerId], references: [id])
-  listings Listing[]
+  owner       User         @relation(fields: [ownerId], references: [id])
+  approval    Approval?
+  marketplace Marketplace?
 }
 
-model Listing {
-  id        Int     @id @default(autoincrement())
-  artworkId Int
-  price     Int
-  isSold    Boolean @default(false)
+model Approval {
+  id         Int      @id @default(autoincrement())
+  artworkId  Int      @unique
+  adminId    Int
+  approvedAt DateTime @default(now())
 
-  artwork      Artwork       @relation(fields: [artworkId], references: [id])
-  transactions Transaction?
-  approvals    ListApproval?
+  artwork Artwork @relation(fields: [artworkId], references: [id])
+  admin   User    @relation(fields: [adminId], references: [id]) // Admin who approved the artwork
 }
 
-model ListApproval {
-  id        Int    @id @default(autoincrement())
-  adminId   Int
-  listingId Int    @unique
-  status    String
+model Marketplace {
+  id        Int @id @default(autoincrement())
+  artworkId Int @unique
+  tokenId   Int // Token ID of the minted NFT
 
-  admin   User    @relation(fields: [adminId], references: [id])
-  listing Listing @relation(fields: [listingId], references: [id])
-}
-
-model Transaction {
-  id        Int      @id @default(autoincrement())
-  buyerId   Int
-  listingId Int      @unique
-  date      DateTime @default(now())
-
-  buyer   User    @relation(fields: [buyerId], references: [id])
-  listing Listing @relation(fields: [listingId], references: [id])
+  artwork Artwork @relation(fields: [artworkId], references: [id])
 }
