@@ -19,7 +19,7 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
         bool isApproved;
         bool isSold;
         bool isMinted;
-    }
+    } 
 
     // State variables
     uint256 public artCount = 0;

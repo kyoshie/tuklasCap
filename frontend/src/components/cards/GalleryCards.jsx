@@ -2,72 +2,136 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const GalleryCards = () => {
-  const [galleryCards, setGalleryCards] = useState([]); // Initialize as an empty array
-  const [loading, setLoading] = useState(true); // Add a loading state
-  const [error, setError] = useState(null); // Add an error state
+  const [galleryCards, setGalleryCards] = useState([]);
+  const [error, setError] = useState(null);
+  const [processingId, setProcessingId] = useState(null);
 
   useEffect(() => {
-    // Fetch uploaded artwork from the backend
     const fetchGalleryData = async () => {
       try {
-        const response = await axios.get('/api/arts/fetch'); // Update the endpoint here
-        console.log("API Response:", response.data); // Log the response
-        setGalleryCards(response.data.artworks);
+        const walletAddress = localStorage.getItem('walletAddress');
+        
+        if (!walletAddress) {
+          setError('Please connect your wallet');
+          return;
+        }
+
+        const response = await axios.get(`http://localhost:5000/api/arts/fetch/${walletAddress}`);
+
+        if (response.data.success) {
+          setGalleryCards(response.data.artworks);
+        } else {
+          setError(response.data.message || 'Failed to fetch artworks');
+        }
       } catch (error) {
-        console.error("Error fetching gallery data:", error);
-        setError(error.response?.data?.message || "Failed to load gallery data.");
-      } finally {
-        setLoading(false);
+        console.error('Error details:', error);
+        setError(error.response?.data?.message || 'Failed to load gallery data');
       }
     };
-    
+
     fetchGalleryData();
   }, []);
 
-  // Render a loading or error message if needed
-  if (loading) {
-    return <p>Loading artworks...</p>;
-  }
+  const handleSell = async (dbId) => {
+    try {
+      setProcessingId(dbId);
+      const walletAddress = localStorage.getItem('walletAddress');
+  
+      if (!walletAddress) {
+        throw new Error('Please connect your wallet first');
+      }
+  
+      const response = await axios.put(`http://localhost:5000/api/arts/approval/${dbId}`, {
+        walletAddress
+      });
 
-  if (error) {
-    return <p className="text-red-500">{error}</p>; // Styled error message
-  }
+      if (response.data.success) {
+        // Update the local state to change the button
+        setGalleryCards(prevCards =>
+          prevCards.map(card =>
+            card.dbId === dbId
+              ? { 
+                  ...card, 
+                  pendingApproval: true,
+                  approvalStatus: 'pending'
+                }
+              : card
+          )
+        );
+        // Show success message
+        alert('Artwork submitted for approval successfully!');
+      }
+    } catch (error) {
+      console.error('Error submitting for approval:', error);
+      alert(error.response?.data?.message || 'Failed to submit artwork for approval');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const getStatusBadge = (artwork) => {
+    if (artwork.isMinted) return (
+      <span className="px-2 py-1 text-xs text-green-800 bg-green-200 rounded-full">
+        Minted
+      </span>
+    );
+    if (artwork.pendingApproval) return (
+      <span className="px-2 py-1 text-xs text-yellow-800 bg-yellow-200 rounded-full">
+        Pending Approval
+      </span>
+    );
+    return null;
+  };
 
   return (
     <div className="h-[90dvh] w-screen lg:items-center md:items-center lg:flex lg:flex-wrap lg:justify-center md:flex md:flex-wrap md:justify-center grid grid-cols-2 overflow-y-auto lg:overflow-y-scroll gap-2">
+      {error && (
+        <div className="w-full p-4 text-center text-red-600 bg-red-100 rounded">
+          {error}
+        </div>
+      )}
+      
       {galleryCards && galleryCards.length > 0 ? (
         galleryCards.map((item) => (
-          <div key={item.id} className='md:w-[19rem] h-min m-1 transition-transform duration-300 bg-transparent border border-gray-500 rounded-lg shadow-lg'>
+          <div key={item.dbId} className='md:w-[19rem] h-min m-1 transition-transform duration-300 bg-transparent border border-gray-500 rounded-lg shadow-lg'>
             <img 
               src={`https://gateway.pinata.cloud/ipfs/${item.imageCID}`} 
               alt={item.title} 
-              onError={(e) => { e.target.src = 'path/to/placeholder/image.png'; }} // Placeholder image on error
+              onError={(e) => { 
+                e.target.src = '/placeholder.png'; 
+              }}
               className='w-full h-[150px] object-cover rounded-t-lg md:h-[200px] lg:h-[200px]' 
             />
-            <div>
-              <p className='font-bold text-center text-white font-oxygen'>{item.title}</p>
-              <p className='text-center text-white lg:text-center'>{item.description}</p>
-              <p className='text-center text-white lg:text-center'>{item.price} ETH</p>
+            <div className="p-4">
+              <h3 className='mb-2 font-bold text-center text-white font-oxygen'>{item.title}</h3>
+              <p className='mb-2 text-center text-white lg:text-center'>{item.description}</p>
+              <p className='mb-4 text-center text-white lg:text-center'>
+                <span className='text-[--orange] text-bold'>{Number(item.price).toFixed(3)} ETH</span>
+              </p>
+              <div className="flex flex-col items-center space-y-2">
+                {getStatusBadge(item)}
+                <button 
+                  className={`bg-[--blue] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--blue-hover] transition-all p-2 font-customFont
+                    ${processingId === item.dbId ? 'opacity-50 cursor-not-allowed' : ''}
+                    ${(item.pendingApproval || item.isMinted) ? 'opacity-50 cursor-not-allowed bg-gray-500 hover:bg-gray-500' : ''}`}
+                  onClick={() => handleSell(item.dbId)}
+                  disabled={processingId === item.dbId || item.pendingApproval || item.isMinted}
+                >
+                  {processingId === item.dbId ? 'Processing...' : 
+                   item.isMinted ? 'Minted' :
+                   item.pendingApproval ? 'Pending' : 'Sell'}
+                </button>
+              </div>
             </div>
-            <button 
-              className='bg-[--blue] w-[120px] text-white justify-center rounded-md shadow-md text-center ml-[55px] my-3 md:ml-[90px] hover:bg-[--blue-hover] transition-all p-1 font-customFont'
-              onClick={() => handleSell(item.id)} // Assuming handleSell is defined
-            >
-              Sell
-            </button>
           </div>
         ))
       ) : (
-        <p className='text-white'>No artworks available.</p>
+        <div className="flex items-center justify-center w-full h-full">
+          <p className='text-xl text-white'>You haven't created any artworks yet.</p>
+        </div>
       )}
     </div>
   );
-};
-
-// Add the handleSell function (define its logic according to your requirements)
-const handleSell = (artworkId) => {
-  console.log("Sell button clicked for artwork:", artworkId);
-  // Add your sell logic here
 };
 
 export default GalleryCards;

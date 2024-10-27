@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; // Add this import
 
 function CreateNFT() {
+  const navigate = useNavigate(); // Add navigation hook
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -15,53 +17,54 @@ function CreateNFT() {
     const checkConnection = async () => {
       const storedWalletAddress = localStorage.getItem('walletAddress');
       if (storedWalletAddress) {
-        // Verify the connection is still active
         if (window.ethereum) {
           try {
             const accounts = await window.ethereum.request({ method: 'eth_accounts' });
             if (accounts[0]?.toLowerCase() === storedWalletAddress.toLowerCase()) {
               setWalletAddress(storedWalletAddress);
             } else {
-              // If the connected account doesn't match stored address, redirect
-              window.location.href = '/';
+              navigate('/');
             }
           } catch (error) {
             console.error("Error verifying wallet connection:", error);
-            window.location.href = '/';
+            navigate('/');
           }
         }
       } else {
-        window.location.href = '/';
+        navigate('/');
       }
     };
 
     checkConnection();
 
-    // Listen for account changes
     if (window.ethereum) {
       window.ethereum.on('accountsChanged', (accounts) => {
         if (accounts.length > 0) {
           setWalletAddress(accounts[0]);
           localStorage.setItem('walletAddress', accounts[0]);
         } else {
-          window.location.href = '/';
+          navigate('/');
         }
       });
     }
 
     return () => {
-      // Cleanup listener
       if (window.ethereum) {
         window.ethereum.removeListener('accountsChanged', () => {});
       }
     };
-  }, []);
+  }, [navigate]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        setError("File size must be less than 10MB");
+        return;
+      }
       setImage(file);
       setImageName(file.name);
+      setError(""); // Clear any previous errors
     }
   };
 
@@ -70,13 +73,17 @@ function CreateNFT() {
     setLoading(true);
     setError("");
 
-    if (!image) {
-      setError("Please select an image.");
-      setLoading(false);
-      return;
-    }
-
     try {
+      const walletAddress = localStorage.getItem('walletAddress');
+      if (!walletAddress) {
+        throw new Error("Please connect your wallet first");
+      }
+
+      // Validate price
+      if (isNaN(price) || parseFloat(price) <= 0) {
+        throw new Error("Please enter a valid price");
+      }
+
       const formData = new FormData();
       formData.append("file", image);
       formData.append("title", title);
@@ -91,14 +98,18 @@ function CreateNFT() {
       });
 
       if (response.data.success) {
+        // Show success message
+        alert("Artwork created successfully!");
+        
+        // Reset form
         setTitle("");
         setDescription("");
         setPrice("");
         setImage(null);
         setImageName("");
-        alert("NFT created successfully!");
-      } else {
-        throw new Error(response.data.message || "Failed to create NFT");
+        
+        // Navigate to gallery
+        navigate('/gallery');
       }
     } catch (error) {
       console.error("Error creating NFT:", error);
@@ -115,7 +126,6 @@ function CreateNFT() {
           Create New NFT
         </h2>
         
-        {/* Display wallet address */}
         {walletAddress && (
           <div className="mb-4 text-center">
             <p className="text-sm text-gray-600">
@@ -124,9 +134,14 @@ function CreateNFT() {
           </div>
         )}
 
-        {error && <p className="mb-4 text-center text-red-500">{error}</p>}
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
+        {error && (
+          <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 border border-red-400 rounded">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
             <label className="block mb-2 text-sm font-bold text-gray-700 md:text-xl" htmlFor="title">
               Title
             </label>
@@ -137,10 +152,12 @@ function CreateNFT() {
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-3 py-2 leading-tight text-gray-900 bg-white border border-gray-300 rounded shadow appearance-none focus:outline-none focus:shadow-outline focus:border-indigo-500 md:w-[100%]"
               placeholder="Enter NFT title"
+              maxLength={100}
               required
             />
           </div>
-          <div className="mb-4">
+
+          <div>
             <label className="block mb-2 text-sm font-bold text-gray-700 md:text-xl" htmlFor="description">
               Description
             </label>
@@ -150,10 +167,13 @@ function CreateNFT() {
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-3 py-2 leading-tight text-gray-900 bg-white border border-gray-300 rounded shadow appearance-none focus:outline-none focus:shadow-outline focus:border-indigo-500"
               placeholder="Enter NFT description"
+              rows={4}
+              maxLength={1000}
               required
             />
           </div>
-          <div className="mb-4">
+
+          <div>
             <label className="block mb-2 text-sm font-bold text-gray-700 md:text-xl" htmlFor="price">
               Price (ETH)
             </label>
@@ -165,11 +185,12 @@ function CreateNFT() {
               className="w-full px-3 py-2 leading-tight text-gray-900 bg-white border border-gray-300 rounded shadow appearance-none focus:outline-none focus:shadow-outline focus:border-indigo-500"
               placeholder="Enter NFT price"
               step="0.001"
-              min="0.000"
+              min="0.001"
               required
             />
           </div>
-          <div className="mb-4">
+
+          <div>
             <label className="block mb-2 text-sm font-bold text-gray-700" htmlFor="image">
               Upload Image
             </label>
@@ -189,9 +210,12 @@ function CreateNFT() {
               </div>
             )}
           </div>
+
           <button
             type="submit"
-            className={`w-full px-4 py-2 font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 focus:outline-none focus:shadow-outline ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+            className={`w-full px-4 py-2 font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 focus:outline-none focus:shadow-outline ${
+              loading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             disabled={loading}
           >
             {loading ? "Creating..." : "Create NFT"}

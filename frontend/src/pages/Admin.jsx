@@ -1,15 +1,31 @@
-import { Bell, Home, LogOut, Users } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';  // Import useEffect for handling the disconnect effect
+import { Home, LogOut } from 'lucide-react';
 import Table from '../components/table/Table';
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 const Admin = () => {
-    const navigate = useNavigate(); // Hook to programmatically navigate
+    const navigate = useNavigate();
 
-    const handleLogout = () => {
-        localStorage.removeItem('walletAddress');
-        console.log('User logged out and MetaMask disconnected');
-        navigate('/');
+    // Check if admin is logged in on component mount
+    useEffect(() => {
+        const walletAddress = localStorage.getItem('walletAddress');
+        if (!walletAddress) {
+            navigate('/');
+        }
+    }, [navigate]);
+
+    const handleLogout = async () => {
+        try {
+            localStorage.removeItem('walletAddress');
+
+            if (window.ethereum) {
+                console.log('Cleared wallet connection state');
+            }
+
+            navigate('/');
+        } catch (error) {
+            console.error('Error during logout:', error);
+        }
     };
 
     return (
@@ -17,16 +33,17 @@ const Admin = () => {
             <aside className="w-64 shadow-md bg-[--background]">
                 <div className="p-4 text-xl font-bold text-white">Tuklas Administrator</div>
                 <nav className="mt-4">
-                    <Link to="/admin" className="flex items-center px-4 py-2 text-[--orange] cursor-pointer">
+                    <a className="flex items-center px-4 py-2 text-[--orange] hover:bg-gray-800 transition-colors duration-200 cursor-pointer">
                         <Home className="w-5 h-5 mr-3" />
                         Dashboard
-                    </Link>
-                    <a 
-                        onClick={handleLogout} // Use the handleLogout function on click
-                        className="flex items-center px-4 py-2 text-red-300 cursor-pointer">
+                    </a>
+                    <button 
+                        onClick={handleLogout}
+                        className="flex items-center w-full px-4 py-2 text-red-300 transition-colors duration-200 cursor-pointer hover:bg-gray-800"
+                    >
                         <LogOut className="w-5 h-5 mr-3" />
                         Logout
-                    </a>
+                    </button>
                 </nav>
             </aside>
 
@@ -34,6 +51,9 @@ const Admin = () => {
                 <header className="bg-white shadow-sm">
                     <div className="flex items-center justify-between px-6 py-4">
                         <h1 className="text-2xl font-semibold text-gray-800">Dashboard</h1>
+                        <div className="text-sm font-semibold text-black">
+                            Connected: {localStorage.getItem('walletAddress')?.slice(0, 6)}...{localStorage.getItem('walletAddress')?.slice(-4)}
+                        </div>
                     </div>
                 </header>
 

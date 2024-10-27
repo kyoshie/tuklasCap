@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,47 +11,86 @@ datasource db {
 }
 
 model User {
-  id            Int     @id @default(autoincrement())
-  walletAddress String  @unique
+  id            Int      @id @default(autoincrement())
+  walletAddress String   @unique
   username      String?
   bio           String?
-  role          String  @default("USER") // 'USER' or 'ADMIN'
+  role          String   @default("USER") // "USER" or "ADMIN"
   profilePic    Bytes?
+  createdAt     DateTime @default(now())
 
-  artworks  Artwork[]
-  approvals Approval[] // Track approvals by admin
+  // Relations
+  artworks  Artwork[] // Artworks created by user
+  approvals Approval[] // Approvals made by admin
 }
 
 model Artwork {
-  id          Int     @id @default(autoincrement())
-  ownerId     Int
+  dbId        Int     @id @default(autoincrement())
+  contractId  Int     @unique // Changed from contractID to contractId for consistency
   title       String
   description String
-  imageCID    String // CID of the image in IPFS
-  isApproved  Boolean @default(false)
-  isMinted    Boolean @default(false)
-  isSold      Boolean @default(false)
-  price       Decimal @default(0.000) @db.Decimal(28, 8)
+  imageCID    String // IPFS CID
+  price       Decimal @default(0.000) @db.Decimal(28, 18)
 
+  // Status flags
+  isApproved      Boolean @default(false)
+  isMinted        Boolean @default(false)
+  isSold          Boolean @default(false)
+  pendingApproval Boolean @default(false)
+
+  // Transaction hashes
+  transactionHash     String? // Creation transaction
+  mintTransactionHash String?
+
+  // Timestamps
+  createdAt  DateTime  @default(now())
+  listedAt   DateTime? // When the artwork was listed for sale
+  soldAt     DateTime? // When the artwork was sold
+  mintedAt   DateTime? // When the artwork was minted
+  approvedAt DateTime? // When the artwork was approved
+
+  // Relations
+  ownerId     Int
   owner       User         @relation(fields: [ownerId], references: [id])
   approval    Approval?
   marketplace Marketplace?
+
+  // Indexes for better query performance
+  @@index([ownerId])
+  @@index([pendingApproval])
+  @@index([isApproved])
+  @@index([contractId])
 }
 
 model Approval {
-  id         Int      @id @default(autoincrement())
-  artworkId  Int      @unique
+  id         Int       @id @default(autoincrement())
+  artworkId  Int       @unique
   adminId    Int
-  approvedAt DateTime @default(now())
+  status     String    @default("pending") // "pending", "approved", "rejected"
+  approvedAt DateTime? // When the artwork was approved
+  createdAt  DateTime  @default(now())
+  reason     String? // Reason for approval/rejection
 
-  artwork Artwork @relation(fields: [artworkId], references: [id])
-  admin   User    @relation(fields: [adminId], references: [id]) // Admin who approved the artwork
+  // Relations
+  artwork Artwork @relation(fields: [artworkId], references: [dbId])
+  admin   User    @relation(fields: [adminId], references: [id])
+
+  // Indexes
+  @@index([adminId])
+  @@index([status])
 }
 
 model Marketplace {
-  id        Int @id @default(autoincrement())
-  artworkId Int @unique
-  tokenId   Int // Token ID of the minted NFT
+  id        Int      @id @default(autoincrement())
+  artworkId Int      @unique
+  tokenId   Int // NFT token ID
+  price     Decimal  @db.Decimal(28, 18) // Current listing price
+  listedAt  DateTime @default(now())
 
-  artwork Artwork @relation(fields: [artworkId], references: [id])
+  // Relations
+  artwork Artwork @relation(fields: [artworkId], references: [dbId])
+
+  // Indexes
+  @@index([tokenId])
+  @@index([price])
 }
