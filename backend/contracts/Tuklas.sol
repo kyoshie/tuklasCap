@@ -19,7 +19,7 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
         bool isApproved;
         bool isSold;
         bool isMinted;
-    } 
+    }
 
     // State variables
     uint256 public artCount = 0;
@@ -44,7 +44,7 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
         address payable _adminWallet
     )
         ERC721("TuklasArt", "TUKLAS")
-        Ownable(0x784a2430a204cCB93Fb9010008435e0A3cCA5675) // Pass msg.sender as the initial owner
+        Ownable(0x784a2430a204cCB93Fb9010008435e0A3cCA5675) //admin as the initial owner
     {
         adminWallet = _adminWallet;
     }

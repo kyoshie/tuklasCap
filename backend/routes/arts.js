@@ -134,6 +134,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
     const { title, description, price, walletAddress } = req.body;
 
+    // Validate the wallet address format
     if (!ethers.utils.isAddress(walletAddress)) {
       return res.status(400).json({ success: false, message: "Invalid wallet address" });
     }
@@ -165,28 +166,27 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
     // Get contract instance
     const contract = getContract();
-
-    // Get current art count before submission
-    const currentArtCount = await contract.artCount();
-    console.log('Current art count:', currentArtCount.toString());
-
+   
     // Submit to smart contract
     const tx = await contract.submitArt(
       title,
       pinataRes.data.IpfsHash,
       ethers.utils.parseEther(price.toString()),
-      description
+      description,
     );
-    const receipt = await tx.wait();
 
-    // The new art ID will be currentArtCount + 1
-    const newArtId = currentArtCount.add(1);
-    console.log('New art ID:', newArtId.toString());
+
+    const receipt = await tx.wait();
+    if (!receipt.status) {
+      throw new Error("Transaction failed");
+    }
+
+   
 
     // Save to database with both IDs
     const artwork = await prisma.artwork.create({
       data: {
-        contractId: newArtId.toNumber(),
+        contractId: receipt.events[0].args.artId.toNumber(), // Adjust if needed
         title,
         description,
         imageCID: pinataRes.data.IpfsHash,
@@ -208,7 +208,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error handling upload:', error);
+    console.error('Error handling upload:', error.message);
     res.status(500).json({
       success: false,
       message: "Failed to process upload",
@@ -216,6 +216,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     });
   }
 });
+
 
 router.put('/approval/:artworkId', async (req, res) => {
   try {
@@ -338,6 +339,178 @@ router.put('/approval/:artworkId', async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to submit artwork for approval",
+      error: error.message
+    });
+  }
+});
+
+router.get('/marketplace', async (req, res) => {
+  try {
+    const listings = await prisma.marketplace.findMany({
+      include: {
+        artwork: {
+          include: {
+            owner: {
+              select: {
+                username: true,
+                walletAddress: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        listedAt: 'desc'
+      }
+    });
+
+    res.json({
+      success: true,
+      listings: listings.map(listing => ({
+        id: listing.id,
+        tokenId: listing.tokenId,
+        price: listing.price.toString(),
+        listedAt: listing.listedAt,
+        artwork: {
+          id: listing.artwork.dbId,
+          title: listing.artwork.title,
+          description: listing.artwork.description,
+          imageCID: listing.artwork.imageCID,
+          artist: listing.artwork.owner.username || 'Anonymous',
+          artistWallet: listing.artwork.owner.walletAddress
+        }
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error fetching marketplace listings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch marketplace listings'
+    });
+  }
+});
+
+
+router.post('/marketplace/buy/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { walletAddress } = req.body;
+    const marketplaceId = parseInt(id);
+
+    // Validate wallet address
+    if (!walletAddress || !ethers.utils.isAddress(walletAddress)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid wallet address"
+      });
+    }
+
+    // Get marketplace listing with artwork details
+    const listing = await prisma.marketplace.findUnique({
+      where: { id: marketplaceId },
+      include: {
+        artwork: {
+          include: {
+            owner: true
+          }
+        }
+      }
+    });
+
+    if (!listing) {
+      return res.status(404).json({
+        success: false,
+        message: "Listing not found"
+      });
+    }
+
+    // Verify artwork status
+    if (!listing.artwork.isApproved || !listing.artwork.isMinted) {
+      return res.status(400).json({
+        success: false,
+        message: "Artwork is not ready for sale"
+      });
+    }
+
+    // Get contract instance
+    const contract = getContract();
+    
+    // Calculate value and gas
+    const value = ethers.utils.parseEther(listing.price.toString());
+    const gasPrice = await provider.getGasPrice();
+
+    // Execute purchase transaction
+    const tx = await contract.buyArt(
+      listing.artwork.contractId,
+      {
+        value: value,
+        gasLimit: 300000,
+        gasPrice: gasPrice.mul(12).div(10)
+      }
+    );
+
+    const receipt = await tx.wait();
+    console.log('Purchase successful:', receipt.transactionHash);
+
+    // Update database records
+    await prisma.$transaction(async (prisma) => {
+      // Update artwork
+      await prisma.artwork.update({
+        where: { dbId: listing.artwork.dbId },
+        data: {
+          isSold: true,
+          soldAt: new Date()
+        }
+      });
+
+      // Create sale record
+      await prisma.sale.create({
+        data: {
+          artworkId: listing.artwork.dbId,
+          buyerAddress: walletAddress,
+          price: listing.price,
+          transactionHash: receipt.transactionHash
+        }
+      });
+
+      // Remove marketplace listing
+      await prisma.marketplace.delete({
+        where: { id: marketplaceId }
+      });
+    });
+
+    res.json({
+      success: true,
+      message: 'NFT purchased successfully',
+      transactionHash: receipt.transactionHash,
+      saleDetails: {
+        artworkId: listing.artwork.dbId,
+        price: listing.price.toString(),
+        buyer: walletAddress
+      }
+    });
+
+  } catch (error) {
+    console.error('Error processing purchase:', error);
+    
+    // Handle specific contract errors
+    if (error.message.includes("Insufficient funds")) {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient funds to complete purchase"
+      });
+    }
+    if (error.message.includes("Artwork is already sold")) {
+      return res.status(400).json({
+        success: false,
+        message: "This artwork has already been sold"
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process purchase',
       error: error.message
     });
   }

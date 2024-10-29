@@ -70,7 +70,7 @@ router.patch('/approve/:dbId', async (req, res) => {
       where: { dbId: artworkDbId },
       include: {
         approval: true,
-        owner: {
+        owner:  {
           select: {
             username: true,
             walletAddress: true
@@ -86,7 +86,7 @@ router.patch('/approve/:dbId', async (req, res) => {
       });
     }
 
-    // Start a transaction
+    // Start approval transaction
     const updatedArtwork = await prisma.$transaction(async (prisma) => {
       // Update artwork status
       const updatedArtwork = await prisma.artwork.update({
@@ -98,7 +98,7 @@ router.patch('/approve/:dbId', async (req, res) => {
         }
       });
 
-      // Update or create approval record
+      // Create/update approval record
       if (artwork.approval) {
         await prisma.approval.update({
           where: { artworkId: artworkDbId },
@@ -112,7 +112,7 @@ router.patch('/approve/:dbId', async (req, res) => {
         await prisma.approval.create({
           data: {
             artworkId: artworkDbId,
-            adminId: 4,
+            adminId: adminId,
             status: approved ? 'approved' : 'rejected',
             reason,
             approvedAt: approved ? new Date() : null
@@ -123,7 +123,7 @@ router.patch('/approve/:dbId', async (req, res) => {
       return updatedArtwork;
     });
 
-    // If approved, proceed with minting
+    // If approved, proceed with minting and marketplace listing
     if (approved) {
       try {
         const wallet = new ethers.Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
@@ -134,8 +134,10 @@ router.patch('/approve/:dbId', async (req, res) => {
           contractId: artwork.contractId
         });
 
+        // Mint the NFT
         const mintTx = await contract.approveAndMintArt(
           artwork.contractId,
+          artwork.owner.walletAddress,
           {
             gasLimit: 500000,
             gasPrice: (await provider.getGasPrice()).mul(12).div(10)
@@ -145,27 +147,47 @@ router.patch('/approve/:dbId', async (req, res) => {
         const receipt = await mintTx.wait();
         console.log('Minting successful:', receipt.transactionHash);
 
-        // Update minting status with transaction hash
-        await prisma.artwork.update({
-          where: { dbId: artworkDbId },
-          data: {
-            isMinted: true,
-            mintTransactionHash: receipt.transactionHash,
-            mintedAt: new Date()
-          }
+        // Use contractId as tokenId since they should match
+        const tokenId = artwork.contractId;
+
+        // Start post-minting transaction
+        await prisma.$transaction(async (prisma) => {
+          // Update artwork with minting info
+          await prisma.artwork.update({
+            where: { dbId: artworkDbId },
+            data: {
+              isMinted: true,
+              mintTransactionHash: receipt.transactionHash,
+              mintedAt: new Date(),
+              listedAt: new Date()
+            }
+          });
+
+          // Create marketplace listing with explicit tokenId
+          await prisma.marketplace.create({
+            data: {
+              artworkId: artworkDbId,
+              tokenId: tokenId, // Using the tokenId we got from contractId
+              price: artwork.price, // This is already a Decimal
+              status: "LISTED"
+            }
+          });
         });
+
+        console.log('Created marketplace listing with tokenId:', tokenId);
+
       } catch (mintError) {
-        console.error('Minting error:', mintError);
+        console.error('Minting or marketplace error:', mintError);
         return res.status(500).json({
           success: false,
-          message: 'Artwork approved but minting failed: ' + mintError.message
+          message: 'Artwork approved but minting/listing failed: ' + mintError.message
         });
       }
     }
 
     res.json({
       success: true,
-      message: approved ? 'Artwork approved and minted successfully' : 'Artwork rejected',
+      message: approved ? 'Artwork approved, minted, and listed in marketplace' : 'Artwork rejected',
       artwork: {
         ...updatedArtwork,
         price: updatedArtwork.price.toString()
@@ -180,5 +202,4 @@ router.patch('/approve/:dbId', async (req, res) => {
     });
   }
 });
-
 export default router;

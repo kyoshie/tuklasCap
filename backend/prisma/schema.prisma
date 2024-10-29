@@ -54,6 +54,7 @@ model Artwork {
   owner       User         @relation(fields: [ownerId], references: [id])
   approval    Approval?
   marketplace Marketplace?
+  Sale        Sale[]
 
   // Indexes for better query performance
   @@index([ownerId])
@@ -85,6 +86,7 @@ model Marketplace {
   artworkId Int      @unique
   tokenId   Int // NFT token ID
   price     Decimal  @db.Decimal(28, 18) // Current listing price
+  status    String   @default("LISTED")
   listedAt  DateTime @default(now())
 
   // Relations
@@ -93,4 +95,21 @@ model Marketplace {
   // Indexes
   @@index([tokenId])
   @@index([price])
+  @@index([status])
+}
+
+model Sale {
+  id              Int      @id @default(autoincrement())
+  artworkId       Int
+  buyerAddress    String // buyer's wallet address
+  price           Decimal  @db.Decimal(28, 18)
+  transactionHash String
+  soldAt          DateTime @default(now())
+
+  // Relations
+  artwork Artwork @relation(fields: [artworkId], references: [dbId])
+
+  // Indexes
+  @@index([artworkId])
+  @@index([buyerAddress])
 }
