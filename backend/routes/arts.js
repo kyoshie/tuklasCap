@@ -2,7 +2,6 @@ import express from 'express';
 import multer from 'multer';
 import { PrismaClient } from '@prisma/client';
 import { ethers } from 'ethers';
-import TuklasArtMarketplaceABI from '../artifacts/contracts/Tuklas.sol/TuklasArtMarketplace.json' assert {type: 'json'};
 import axios from 'axios';
 import FormData from 'form-data';
 import dotenv from 'dotenv';
@@ -12,9 +11,6 @@ dotenv.config();
 const prisma = new PrismaClient();
 const router = express.Router();
 
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
-const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
-const provider = new ethers.providers.JsonRpcProvider(process.env.ARBITRUM_SEPOLIA_URL);
 
 const upload = multer({
   limits: {
@@ -22,20 +18,79 @@ const upload = multer({
   },
 });
 
-// Get contract instance
-if (!ethers.utils.isAddress(CONTRACT_ADDRESS)) {
-  throw new Error("Invalid CONTRACT_ADDRESS in .env file");
-}
 
-const getContract = () => {
-  const wallet = new ethers.Wallet(ADMIN_PRIVATE_KEY, provider);
-  
-  if (!ethers.utils.isAddress(wallet.address)) {
-    throw new Error("Invalid ADMIN_PRIVATE_KEY in .env file");
+router.post('/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+
+    const { title, description, price, walletAddress, transactionHash, contractId } = req.body;
+
+    // Validate the wallet address format
+    if (!ethers.utils.isAddress(walletAddress)) {
+      return res.status(400).json({ success: false, message: "Invalid wallet address" });
+    }
+
+    // Create or retrieve user
+    let user = await prisma.user.findUnique({ where: { walletAddress } });
+    if (!user) {
+      user = await prisma.user.create({ data: { walletAddress, role: 'USER' } });
+    }
+
+    // Pinata upload
+    const pinataFormData = new FormData();
+    pinataFormData.append('file', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype,
+    });
+
+    const pinataRes = await axios.post(
+      'https://api.pinata.cloud/pinning/pinFileToIPFS',
+      pinataFormData,
+      {
+        maxBodyLength: Infinity,
+        headers: {
+          ...pinataFormData.getHeaders(),
+          'pinata_api_key': process.env.PINATA_API_KEY,
+          'pinata_secret_api_key': process.env.PINATA_API_SECRET,
+        }
+      }
+    );
+
+    // Save to database
+    const artwork = await prisma.artwork.create({
+      data: {
+        contractId: parseInt(contractId),
+        title,
+        description,
+        imageCID: pinataRes.data.IpfsHash,
+        price: parseFloat(price),
+        isApproved: false,
+        isMinted: false,
+        isSold: false,
+        pendingApproval: false,
+        transactionHash: transactionHash, // From frontend transaction
+        owner: { connect: { id: user.id } }
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      artwork,
+      ipfsHash: pinataRes.data.IpfsHash,
+      message: "Artwork uploaded successfully and posted in the gallery"
+    });
+
+  } catch (error) {
+    console.error('Error handling upload:', error.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process upload",
+      error: error.message
+    });
   }
-  
-  return new ethers.Contract(CONTRACT_ADDRESS, TuklasArtMarketplaceABI.abi, wallet);
-};
+});
 
 router.get('/fetch/:walletAddress', async (req, res) => {
   try {
@@ -88,6 +143,14 @@ router.get('/fetch/:walletAddress', async (req, res) => {
       }
     });
 
+    // Check if artworks is defined and not null
+    if (!artworks) {
+      return res.status(404).json({
+        success: false,
+        message: "No artworks found"
+      });
+    }
+
     // Format the response
     const formattedArtworks = artworks.map(artwork => ({
       dbId: artwork.dbId,
@@ -124,99 +187,30 @@ router.get('/fetch/:walletAddress', async (req, res) => {
   }
 });
 
-
-// Artwork Upload Endpoint
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/update-hash', async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "No file uploaded" });
-    }
+    const { artworkId, transactionHash } = req.body;
 
-    const { title, description, price, walletAddress } = req.body;
-
-    // Validate the wallet address format
-    if (!ethers.utils.isAddress(walletAddress)) {
-      return res.status(400).json({ success: false, message: "Invalid wallet address" });
-    }
-
-    // Create or retrieve user
-    let user = await prisma.user.findUnique({ where: { walletAddress } });
-    if (!user) {
-      user = await prisma.user.create({ data: { walletAddress, role: 'USER' } });
-    }
-
-    // Pinata upload
-    const formData = new FormData();
-    formData.append('file', req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: req.file.mimetype,
+    const artwork = await prisma.artwork.update({
+      where: { dbId: parseInt(artworkId) },
+      data: { transactionHash }
     });
 
-    const pinataRes = await axios.post(
-      'https://api.pinata.cloud/pinning/pinFileToIPFS',
-      formData,
-      {
-        headers: {
-          ...formData.getHeaders(),
-          'pinata_api_key': process.env.PINATA_API_KEY,
-          'pinata_secret_api_key': process.env.PINATA_API_SECRET,
-        }
-      }
-    );
-
-    // Get contract instance
-    const contract = getContract();
-   
-    // Submit to smart contract
-    const tx = await contract.submitArt(
-      title,
-      pinataRes.data.IpfsHash,
-      ethers.utils.parseEther(price.toString()),
-      description,
-    );
-
-
-    const receipt = await tx.wait();
-    if (!receipt.status) {
-      throw new Error("Transaction failed");
-    }
-
-   
-
-    // Save to database with both IDs
-    const artwork = await prisma.artwork.create({
-      data: {
-        contractId: receipt.events[0].args.artId.toNumber(), // Adjust if needed
-        title,
-        description,
-        imageCID: pinataRes.data.IpfsHash,
-        price: parseFloat(price),
-        isApproved: false,
-        isMinted: false,
-        isSold: false,
-        pendingApproval: false,
-        transactionHash: receipt.transactionHash,
-        owner: { connect: { id: user.id } }
-      }
-    });
-
-    res.status(200).json({
+    res.json({
       success: true,
       artwork,
-      transactionHash: receipt.transactionHash,
-      message: "Artwork uploaded successfully and posted in the gallery"
+      message: "Transaction hash updated successfully"
     });
 
   } catch (error) {
-    console.error('Error handling upload:', error.message);
+    console.error('Error updating hash:', error);
     res.status(500).json({
       success: false,
-      message: "Failed to process upload",
+      message: "Failed to update transaction hash",
       error: error.message
     });
   }
 });
-
 
 router.put('/approval/:artworkId', async (req, res) => {
   try {
@@ -395,7 +389,7 @@ router.get('/marketplace', async (req, res) => {
 router.post('/marketplace/buy/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { walletAddress } = req.body;
+    const { walletAddress, transactionHash } = req.body;
     const marketplaceId = parseInt(id);
 
     // Validate wallet address
@@ -433,25 +427,16 @@ router.post('/marketplace/buy/:id', async (req, res) => {
       });
     }
 
-    // Get contract instance
-    const contract = getContract();
-    
-    // Calculate value and gas
-    const value = ethers.utils.parseEther(listing.price.toString());
-    const gasPrice = await provider.getGasPrice();
+    // Verify transaction on blockchain
+    const provider = new ethers.providers.JsonRpcProvider(process.env.ARBITRUM_SEPOLIA_URL);
+    const receipt = await provider.getTransactionReceipt(transactionHash);
 
-    // Execute purchase transaction
-    const tx = await contract.buyArt(
-      listing.artwork.contractId,
-      {
-        value: value,
-        gasLimit: 300000,
-        gasPrice: gasPrice.mul(12).div(10)
-      }
-    );
-
-    const receipt = await tx.wait();
-    console.log('Purchase successful:', receipt.transactionHash);
+    if (!receipt || !receipt.status) {
+      return res.status(400).json({
+        success: false,
+        message: "Transaction not found or failed"
+      });
+    }
 
     // Update database records
     await prisma.$transaction(async (prisma) => {
@@ -470,7 +455,7 @@ router.post('/marketplace/buy/:id', async (req, res) => {
           artworkId: listing.artwork.dbId,
           buyerAddress: walletAddress,
           price: listing.price,
-          transactionHash: receipt.transactionHash
+          transactionHash: transactionHash
         }
       });
 
@@ -483,7 +468,7 @@ router.post('/marketplace/buy/:id', async (req, res) => {
     res.json({
       success: true,
       message: 'NFT purchased successfully',
-      transactionHash: receipt.transactionHash,
+      transactionHash: transactionHash,
       saleDetails: {
         artworkId: listing.artwork.dbId,
         price: listing.price.toString(),
@@ -494,20 +479,6 @@ router.post('/marketplace/buy/:id', async (req, res) => {
   } catch (error) {
     console.error('Error processing purchase:', error);
     
-    // Handle specific contract errors
-    if (error.message.includes("Insufficient funds")) {
-      return res.status(400).json({
-        success: false,
-        message: "Insufficient funds to complete purchase"
-      });
-    }
-    if (error.message.includes("Artwork is already sold")) {
-      return res.status(400).json({
-        success: false,
-        message: "This artwork has already been sold"
-      });
-    }
-
     res.status(500).json({
       success: false,
       message: 'Failed to process purchase',
@@ -515,5 +486,6 @@ router.post('/marketplace/buy/:id', async (req, res) => {
     });
   }
 });
+
 
 export default router;

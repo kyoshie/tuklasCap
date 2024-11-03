@@ -136,8 +136,7 @@ router.patch('/approve/:dbId', async (req, res) => {
 
         // Mint the NFT
         const mintTx = await contract.approveAndMintArt(
-          artwork.contractId,
-          artwork.owner.walletAddress,
+          artwork.contractId, // Assuming this is the only argument needed
           {
             gasLimit: 500000,
             gasPrice: (await provider.getGasPrice()).mul(12).div(10)
