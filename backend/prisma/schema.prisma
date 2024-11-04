@@ -15,48 +15,42 @@ model User {
   walletAddress String   @unique
   username      String?
   bio           String?
-  role          String   @default("USER") // "USER" or "ADMIN"
+  role          String   @default("USER")
   profilePic    Bytes?
   createdAt     DateTime @default(now())
 
-  // Relations
-  artworks  Artwork[] // Artworks created by user
-  approvals Approval[] // Approvals made by admin
+  artworks  Artwork[]
+  approvals Approval[]
 }
 
 model Artwork {
   dbId        Int     @id @default(autoincrement())
-  contractId  Int     @unique // Changed from contractID to contractId for consistency
+  contractId  Int     @unique
   title       String
   description String
-  imageCID    String // IPFS CID
+  imageCID    String
   price       Decimal @default(0.000) @db.Decimal(28, 18)
 
-  // Status flags
   isApproved      Boolean @default(false)
   isMinted        Boolean @default(false)
   isSold          Boolean @default(false)
   pendingApproval Boolean @default(false)
 
-  // Transaction hashes
-  transactionHash     String? // Creation transaction
+  transactionHash     String?
   mintTransactionHash String?
 
-  // Timestamps
   createdAt  DateTime  @default(now())
-  listedAt   DateTime? // When the artwork was listed for sale
-  soldAt     DateTime? // When the artwork was sold
-  mintedAt   DateTime? // When the artwork was minted
-  approvedAt DateTime? // When the artwork was approved
+  listedAt   DateTime?
+  soldAt     DateTime?
+  mintedAt   DateTime?
+  approvedAt DateTime?
 
-  // Relations
   ownerId     Int
   owner       User         @relation(fields: [ownerId], references: [id])
   approval    Approval?
   marketplace Marketplace?
   Sale        Sale[]
 
-  // Indexes for better query performance
   @@index([ownerId])
   @@index([pendingApproval])
   @@index([isApproved])
@@ -67,16 +61,14 @@ model Approval {
   id         Int       @id @default(autoincrement())
   artworkId  Int       @unique
   adminId    Int
-  status     String    @default("pending") // "pending", "approved", "rejected"
-  approvedAt DateTime? // When the artwork was approved
+  status     String    @default("pending")
+  approvedAt DateTime?
   createdAt  DateTime  @default(now())
-  reason     String? // Reason for approval/rejection
+  reason     String?
 
-  // Relations
   artwork Artwork @relation(fields: [artworkId], references: [dbId])
   admin   User    @relation(fields: [adminId], references: [id])
 
-  // Indexes
   @@index([adminId])
   @@index([status])
 }
@@ -84,15 +76,13 @@ model Approval {
 model Marketplace {
   id        Int      @id @default(autoincrement())
   artworkId Int      @unique
-  tokenId   Int // NFT token ID
-  price     Decimal  @db.Decimal(28, 18) // Current listing price
+  tokenId   Int
+  price     Decimal  @db.Decimal(28, 18)
   status    String   @default("LISTED")
   listedAt  DateTime @default(now())
 
-  // Relations
   artwork Artwork @relation(fields: [artworkId], references: [dbId])
 
-  // Indexes
   @@index([tokenId])
   @@index([price])
   @@index([status])
@@ -101,15 +91,13 @@ model Marketplace {
 model Sale {
   id              Int      @id @default(autoincrement())
   artworkId       Int
-  buyerAddress    String // buyer's wallet address
+  buyerAddress    String
   price           Decimal  @db.Decimal(28, 18)
   transactionHash String
   soldAt          DateTime @default(now())
 
-  // Relations
   artwork Artwork @relation(fields: [artworkId], references: [dbId])
 
-  // Indexes
   @@index([artworkId])
   @@index([buyerAddress])
 }

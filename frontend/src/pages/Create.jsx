@@ -961,8 +961,6 @@ function CreateNFT() {
   
       // Fetch current art count
       const currentCount = await contract.artCount();
-
-      console.log(typeof currentCount)
       const nextArtId = Number(currentCount) + 1;
   
       // Create FormData for artwork submission
@@ -1013,9 +1011,6 @@ function CreateNFT() {
       setLoading(false);
     }
   };
-  
-  
-
   
   return (
     <div className="h-[100vh] w-full md:fixed bg-[--background] md:overflow-auto md:justify-center md:items-start md:flex">
