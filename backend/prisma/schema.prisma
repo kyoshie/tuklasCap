@@ -50,6 +50,8 @@ model Artwork {
   approval    Approval?
   marketplace Marketplace?
   Sale        Sale[]
+  isRejected  Boolean      @default(false)
+  rejectedAt  DateTime?
 
   @@index([ownerId])
   @@index([pendingApproval])
@@ -66,8 +68,9 @@ model Approval {
   createdAt  DateTime  @default(now())
   reason     String?
 
-  artwork Artwork @relation(fields: [artworkId], references: [dbId])
-  admin   User    @relation(fields: [adminId], references: [id])
+  artwork    Artwork   @relation(fields: [artworkId], references: [dbId])
+  admin      User      @relation(fields: [adminId], references: [id])
+  rejectedAt DateTime?
 
   @@index([adminId])
   @@index([status])

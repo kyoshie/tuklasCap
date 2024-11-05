@@ -70,7 +70,7 @@ router.patch('/approve/:dbId', async (req, res) => {
       where: { dbId: artworkDbId },
       include: {
         approval: true,
-        owner:  {
+        owner: {
           select: {
             username: true,
             walletAddress: true
@@ -94,7 +94,9 @@ router.patch('/approve/:dbId', async (req, res) => {
         data: {
           isApproved: approved,
           pendingApproval: false,
-          approvedAt: approved ? new Date() : null
+          approvedAt: approved ? new Date() : null,
+          isRejected: !approved, // Set isRejected to true if not approved
+          rejectedAt: !approved ? new Date() : null // Add rejection timestamp
         }
       });
 
@@ -105,7 +107,8 @@ router.patch('/approve/:dbId', async (req, res) => {
           data: {
             status: approved ? 'approved' : 'rejected',
             reason,
-            approvedAt: approved ? new Date() : null
+            approvedAt: approved ? new Date() : null,
+            rejectedAt: !approved ? new Date() : null // Add rejection timestamp
           }
         });
       } else {
@@ -115,7 +118,8 @@ router.patch('/approve/:dbId', async (req, res) => {
             adminId: adminId,
             status: approved ? 'approved' : 'rejected',
             reason,
-            approvedAt: approved ? new Date() : null
+            approvedAt: approved ? new Date() : null,
+            rejectedAt: !approved ? new Date() : null // Add rejection timestamp
           }
         });
       }
@@ -136,7 +140,7 @@ router.patch('/approve/:dbId', async (req, res) => {
 
         // Mint the NFT
         const mintTx = await contract.approveAndMintArt(
-          artwork.contractId, // Assuming this is the only argument needed
+          artwork.contractId,
           {
             gasLimit: 500000,
             gasPrice: (await provider.getGasPrice()).mul(12).div(10)
@@ -146,7 +150,6 @@ router.patch('/approve/:dbId', async (req, res) => {
         const receipt = await mintTx.wait();
         console.log('Minting successful:', receipt.transactionHash);
 
-        // Use contractId as tokenId since they should match
         const tokenId = artwork.contractId;
 
         // Start post-minting transaction
@@ -158,7 +161,8 @@ router.patch('/approve/:dbId', async (req, res) => {
               isMinted: true,
               mintTransactionHash: receipt.transactionHash,
               mintedAt: new Date(),
-              listedAt: new Date()
+              listedAt: new Date(),
+              isRejected: false // Ensure rejected status is cleared if successfully minted
             }
           });
 
@@ -166,8 +170,8 @@ router.patch('/approve/:dbId', async (req, res) => {
           await prisma.marketplace.create({
             data: {
               artworkId: artworkDbId,
-              tokenId: tokenId, // Using the tokenId we got from contractId
-              price: artwork.price, // This is already a Decimal
+              tokenId: tokenId,
+              price: artwork.price,
               status: "LISTED"
             }
           });
@@ -184,12 +188,16 @@ router.patch('/approve/:dbId', async (req, res) => {
       }
     }
 
+    // Enhanced response with rejection details
     res.json({
       success: true,
-      message: approved ? 'Artwork approved, minted, and listed in marketplace' : 'Artwork rejected',
+      message: approved 
+        ? 'Artwork approved, minted, and listed in marketplace' 
+        : `Artwork rejected. Reason: ${reason || 'No reason provided'}`,
       artwork: {
         ...updatedArtwork,
-        price: updatedArtwork.price.toString()
+        price: updatedArtwork.price.toString(),
+        rejectionReason: !approved ? reason : null
       }
     });
 

@@ -1014,7 +1014,6 @@ const MarketplaceCards = () => {
               </p>
               <div className='mb-2 text-center text-white'>
                 <p className='text-sm'>Artist: {item.artwork.artist}</p>
-                <p className='text-sm'>Token ID: #{item.tokenId}</p>
               </div>
               <div className="flex flex-col items-center space-y-2">
                 {getStatusBadge(item.price)}

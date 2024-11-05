@@ -16,17 +16,11 @@ const GalleryCards = () => {
           setError('Please connect your wallet');
           return;
         }
-
-        console.log('Fetching data for wallet:', walletAddress);
         
         const response = await axios.get(`http://localhost:5000/api/arts/fetch/${walletAddress}`);
 
-        console.log('API Response:', response.data);
-
         if (response.data.success) {
           setGalleryData(response.data.artworks);
-          console.log('Created artworks:', response.data.artworks.created);
-          console.log('Purchased artworks:', response.data.artworks.purchased);
         } else {
           setError(response.data.message || 'Failed to fetch artworks');
         }
@@ -38,13 +32,6 @@ const GalleryCards = () => {
 
     fetchGalleryData();
   }, []);
-
-  // Debug current state
-  useEffect(() => {
-    console.log('Current gallery data:', galleryData);
-    console.log('Active tab:', activeTab);
-    console.log('Current displayed artworks:', activeTab === 'created' ? galleryData.created : galleryData.purchased);
-  }, [galleryData, activeTab]);
 
   const handleSell = async (dbId) => {
     try {
@@ -60,7 +47,6 @@ const GalleryCards = () => {
       });
 
       if (response.data.success) {
-        // Update the local state to change the button
         setGalleryData(prevData => ({
           ...prevData,
           created: prevData.created.map(card =>
@@ -68,12 +54,11 @@ const GalleryCards = () => {
               ? { 
                   ...card, 
                   pendingApproval: true,
-                  approvalStatus: 'pending'
+                  approvalStatus: 'pending',
                 }
               : card
           )
         }));
-        // Show success message
         alert('Artwork submitted for approval successfully!');
       }
     } catch (error) {
@@ -83,26 +68,84 @@ const GalleryCards = () => {
       setProcessingId(null);
     }
   };
-
+  
   const getStatusBadge = (artwork) => {
+    if (artwork.isSold) return (
+      <span className="px-3 py-1.5 text-sm font-medium text-purple-800 bg-purple-200 rounded-full">
+        Sold
+      </span>
+    );
+    
     if (artwork.isMinted) return (
-      <span className="px-2 py-1 text-xs text-green-800 bg-green-200 rounded-full">
+      <span className="px-3 py-1.5 text-sm font-medium text-green-800 bg-green-200 rounded-full">
         Minted
       </span>
     );
+
+    if (artwork.approvalStatus === 'rejected') {
+      return (
+        <div className="flex flex-col items-center gap-2">
+          <span className="px-3 py-1.5 text-sm font-medium text-red-800 bg-red-200 rounded-full inline-flex items-center gap-1.5 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            Rejected
+          </span>
+          {artwork.reason && (
+            <div className="px-4 py-2 mt-1 text-sm text-red-700 bg-red-100 border border-red-200 rounded-lg max-w-[250px]">
+              {artwork.reason}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     if (artwork.pendingApproval) return (
-      <span className="px-2 py-1 text-xs text-yellow-800 bg-yellow-200 rounded-full">
+      <span className="px-3 py-1.5 text-sm font-medium text-yellow-800 bg-yellow-200 rounded-full">
         Pending Approval
       </span>
     );
+
     return null;
+  };
+
+  const getSellButton = (item) => {
+    if (item.isSold || item.approvalStatus === 'rejected') return null;
+    
+    if (item.isMinted) return (
+      <button 
+        className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
+        disabled
+      >
+        Minted
+      </button>
+    );
+    
+    if (item.pendingApproval) return (
+      <button 
+        className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
+        disabled
+      >
+        Pending
+      </button>
+    );
+
+    return (
+      <button 
+        className={`bg-[--blue] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--blue-hover] transition-all p-2 font-customFont
+          ${processingId === item.dbId ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={() => handleSell(item.dbId)}
+        disabled={processingId === item.dbId}
+      >
+        {processingId === item.dbId ? 'Processing...' : 'Sell'}
+      </button>
+    );
   };
 
   const displayArtworks = activeTab === 'created' ? galleryData.created : galleryData.purchased;
 
   return (
     <div className="flex flex-col h-[90dvh] w-screen">
-      {/* Tab buttons */}
       <div className="flex justify-center gap-4 mb-4">
         <button
           className={`px-4 py-2 rounded-lg transition-all ${
@@ -157,19 +200,7 @@ const GalleryCards = () => {
                 )}
                 <div className="flex flex-col items-center space-y-2">
                   {getStatusBadge(item)}
-                  {activeTab === 'created' && (
-                    <button 
-                      className={`bg-[--blue] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--blue-hover] transition-all p-2 font-customFont
-                        ${processingId === item.dbId ? 'opacity-50 cursor-not-allowed' : ''}
-                        ${(item.pendingApproval || item.isMinted) ? 'opacity-50 cursor-not-allowed bg-gray-500 hover:bg-gray-500' : ''}`}
-                      onClick={() => handleSell(item.dbId)}
-                      disabled={processingId === item.dbId || item.pendingApproval || item.isMinted}
-                    >
-                      {processingId === item.dbId ? 'Processing...' : 
-                       item.isMinted ? 'Minted' :
-                       item.pendingApproval ? 'Pending' : 'Sell'}
-                    </button>
-                  )}
+                  {activeTab === 'created' && getSellButton(item)}
                 </div>
               </div>
             </div>
