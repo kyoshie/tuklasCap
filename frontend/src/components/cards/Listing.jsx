@@ -864,65 +864,91 @@ const CONTRACT_ABI = [
   }
 ]
 
-const MarketplaceCards = () => {
+const Marketplace = () => {
   const [marketplaceItems, setMarketplaceItems] = useState([]);
   const [error, setError] = useState(null);
   const [processingId, setProcessingId] = useState(null);
-
-  useEffect(() => {
-    fetchMarketplaceData();
-  }, []);
+  const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchMarketplaceData = async () => {
     try {
+      setLoading(true);
       const response = await axios.get('http://localhost:5000/api/arts/marketplace');
-
+      
       if (response.data.success) {
-        setMarketplaceItems(response.data.listings);
+        setMarketplaceItems(response.data.listings); // Changed from items to listings
+        setError(null);
       } else {
         setError(response.data.message || 'Failed to fetch marketplace items');
       }
     } catch (error) {
-      console.error('Error details:', error);
+      console.error('Error fetching marketplace data:', error);
       setError(error.response?.data?.message || 'Failed to load marketplace data');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getStatusBadge = (price) => {
-    return (
-      <span className="px-2 py-1 text-xs text-blue-800 bg-blue-200 rounded-full">
-        {`${Number(price).toFixed(3)} ETH`}
-      </span>
-    );
-  };
+  useEffect(() => {
+    const getAccounts = async () => {
+      if (window.ethereum) {
+        try {
+          const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          setAccounts(accs);
+        } catch (error) {
+          console.error('Error getting accounts:', error);
+        }
+      }
+    };
+    
+    getAccounts();
+    fetchMarketplaceData();
+
+    // Listen for account changes
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (newAccounts) => {
+        setAccounts(newAccounts);
+      });
+    }
+
+    return () => {
+      // Cleanup listener
+      if (window.ethereum) {
+        window.ethereum.removeListener('accountsChanged', setAccounts);
+      }
+    };
+  }, []);
 
   const handleBuy = async (itemId, price, marketplaceId) => {
     try {
       setProcessingId(itemId);
-  
+
       // Check if MetaMask is installed
       if (!window.ethereum) {
         alert('MetaMask is not installed. Please install it to use this feature.');
         return;
       }
-  
-      // Request account access if needed
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const walletAddress = accounts[0];
-  
+
+      // Get current account
+      const currentAccount = accounts[0];
+      if (!currentAccount) {
+        alert('Please connect your wallet first');
+        return;
+      }
+
       // Create a provider and signer
       const provider = new ethers.BrowserProvider(window.ethereum);
-      // Make sure to await the signer
       const signer = await provider.getSigner();
-  
+
       // Create a contract instance with the signer
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-  
+
       // Calculate the value and gas
       const value = ethers.parseEther(price.toString());
       const feeData = await provider.getFeeData();
       const gasPrice = feeData.gasPrice;
-  
+
       console.log('Transaction details:', {
         itemId,
         value: value.toString(),
@@ -930,37 +956,37 @@ const MarketplaceCards = () => {
         contract: CONTRACT_ADDRESS,
         signer: await signer.getAddress()
       });
-  
+
       // Execute the purchase transaction
       const tx = await contract.buyArt(itemId, {
         value: value,
-        gasLimit: ethers.getBigInt(300000), // Convert to BigInt
+        gasLimit: ethers.getBigInt(300000),
         gasPrice: gasPrice
       });
-  
+
       console.log('Transaction sent:', tx.hash);
-  
+
       // Wait for transaction confirmation
       const receipt = await tx.wait();
       
       if (!receipt.hash) {
         throw new Error('Transaction hash is missing, purchase might have failed.');
       }
-  
+
       console.log('Purchase successful:', receipt.hash);
-  
+
       // Update backend about the purchase
       try {
         const backendResponse = await axios.post(
           `http://localhost:5000/api/arts/marketplace/buy/${marketplaceId}`,
           {
-            walletAddress: walletAddress.toLowerCase(),
+            walletAddress: currentAccount.toLowerCase(),
             transactionHash: receipt.hash
           }
         );
-  
+
         console.log('Backend update response:', backendResponse.data);
-  
+
         if (backendResponse.data.success) {
           alert('NFT purchased successfully!');
           fetchMarketplaceData(); // Refresh the list
@@ -971,10 +997,9 @@ const MarketplaceCards = () => {
         console.error('Backend update failed:', backendError);
         alert('Transaction successful but failed to update database. Please contact support.');
       }
-  
+
     } catch (error) {
       console.error('Error purchasing NFT:', error);
-      // More detailed error message
       let errorMessage = 'Failed to purchase NFT: ';
       if (error.code === 'ACTION_REJECTED') {
         errorMessage += 'Transaction was rejected by user';
@@ -988,7 +1013,21 @@ const MarketplaceCards = () => {
       setProcessingId(null);
     }
   };
-  
+
+  const getStatusBadge = (price) => (
+    <span className="px-3 py-1.5 text-sm font-medium text-blue-800 bg-blue-200 rounded-full">
+      {Number(price).toFixed(3)} ETH
+    </span>
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center w-full h-full">
+        <p className="text-xl text-white">Loading marketplace items...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="h-[90dvh] w-screen lg:items-center md:items-center lg:flex lg:flex-wrap lg:justify-center md:flex md:flex-wrap md:justify-center grid grid-cols-2 overflow-y-auto lg:overflow-y-scroll gap-2">
       {error && (
@@ -998,37 +1037,59 @@ const MarketplaceCards = () => {
       )}
       
       {marketplaceItems && marketplaceItems.length > 0 ? (
-        marketplaceItems.map((item) => (
-          <div key={item.id} className='md:w-[19rem] h-min m-1 transition-transform duration-300 bg-transparent border border-gray-500 rounded-lg shadow-lg'>
-            <img 
-              src={`https://gateway.pinata.cloud/ipfs/${item.artwork.imageCID}`}
-              alt={item.artwork.title} 
-              className='w-full h-[150px] object-cover rounded-t-lg md:h-[200px] lg:h-[200px]' 
-            />
-            <div className="p-4">
-              <h3 className='mb-2 font-bold text-center text-white font-oxygen'>
-                {item.artwork.title}
-              </h3>
-              <p className='mb-2 text-center text-white lg:text-center'>
-                {item.artwork.description}
-              </p>
-              <div className='mb-2 text-center text-white'>
-                <p className='text-sm'>Artist: {item.artwork.artist}</p>
-              </div>
-              <div className="flex flex-col items-center space-y-2">
-                {getStatusBadge(item.price)}
-                <button 
-                  className={`bg-[--orange] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--orange-hover] transition-all p-2 font-customFont
-                    ${processingId === item.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  onClick={() => handleBuy(item.tokenId, item.price, item.id)}
-                  disabled={processingId === item.id}
-                >
-                  {processingId === item.id ? 'Processing...' : 'Buy Now'}
-                </button>
+        marketplaceItems.map((item) => {
+          const isOwner = accounts[0]?.toLowerCase() === item.artwork.artistWallet?.toLowerCase(); // Updated to match your route response
+
+          return (
+            <div key={item.id} className='md:w-[19rem] h-min m-1 transition-transform duration-300 bg-transparent border border-gray-500 rounded-lg shadow-lg'>
+              <img 
+                src={`https://gateway.pinata.cloud/ipfs/${item.artwork.imageCID}`}
+                alt={item.artwork.title} 
+                className='w-full h-[150px] object-cover rounded-t-lg md:h-[200px] lg:h-[200px]'
+                onError={(e) => { 
+                  e.target.src = '/placeholder.png'; 
+                }}
+              />
+              <div className="p-4">
+                <h3 className='mb-2 font-bold text-center text-white font-oxygen'>
+                  {item.artwork.title}
+                </h3>
+                <p className='mb-2 text-center text-white lg:text-center'>
+                  {item.artwork.description}
+                </p>
+                <div className='mb-2 text-center text-white'>
+                  <p className='text-sm'>Artist: {item.artwork.artist}</p>
+                  {item.artwork.lastSalePrice && (
+                    <p className='text-sm text-gray-400'>
+                      Last Sale: {Number(item.artwork.lastSalePrice).toFixed(3)} ETH
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col items-center space-y-2">
+                  {getStatusBadge(item.price)}
+                  {isOwner ? (
+                    <button 
+                      className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
+                      disabled
+                      title="You cannot buy your own artwork"
+                    >
+                      Your Artwork
+                    </button>
+                  ) : (
+                    <button 
+                      className={`bg-[--orange] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--orange-hover] transition-all p-2 font-customFont
+                        ${processingId === item.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      onClick={() => handleBuy(item.tokenId, item.price, item.id)}
+                      disabled={processingId === item.id}
+                    >
+                      {processingId === item.id ? 'Processing...' : 'Buy Now'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))
+          );
+        })
       ) : (
         <div className="flex items-center justify-center w-full h-full">
           <p className='text-xl text-white'>No NFTs available in the marketplace.</p>
@@ -1038,4 +1099,4 @@ const MarketplaceCards = () => {
   );
 };
 
-export default MarketplaceCards;
+export default Marketplace;

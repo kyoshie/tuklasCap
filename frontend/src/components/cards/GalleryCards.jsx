@@ -33,6 +33,11 @@ const GalleryCards = () => {
     fetchGalleryData();
   }, []);
 
+  const isOwner = (artwork) => {
+    const currentWallet = localStorage.getItem('walletAddress');
+    return currentWallet?.toLowerCase() === artwork.ownerWallet?.toLowerCase();
+  };
+
   const handleSell = async (dbId) => {
     try {
       setProcessingId(dbId);
@@ -68,6 +73,14 @@ const GalleryCards = () => {
       setProcessingId(null);
     }
   };
+
+  const handleBuy = async (artwork) => {
+    if (isOwner(artwork)) {
+      alert("You cannot purchase your own artwork");
+      return;
+    }
+    // Your existing buy logic here
+  };
   
   const getStatusBadge = (artwork) => {
     if (artwork.isSold) return (
@@ -76,7 +89,13 @@ const GalleryCards = () => {
       </span>
     );
     
-    if (artwork.isMinted) return (
+    if (artwork.isMinted && !isOwner(artwork)) return (
+      <span className="px-3 py-1.5 text-sm font-medium text-green-800 bg-green-200 rounded-full">
+        Available
+      </span>
+    );
+
+    if (artwork.isMinted && isOwner(artwork)) return (
       <span className="px-3 py-1.5 text-sm font-medium text-green-800 bg-green-200 rounded-full">
         Minted
       </span>
@@ -142,6 +161,31 @@ const GalleryCards = () => {
     );
   };
 
+  const getBuyButton = (item) => {
+    if (item.isSold) return null;
+
+    if (isOwner(item)) {
+      return (
+        <button 
+          className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
+          disabled
+          title="You cannot buy your own artwork"
+        >
+          Your Artwork
+        </button>
+      );
+    }
+
+    return (
+      <button 
+        className="bg-[--blue] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--blue-hover] transition-all p-2 font-customFont"
+        onClick={() => handleBuy(item)}
+      >
+        Buy Now
+      </button>
+    );
+  };
+
   const displayArtworks = activeTab === 'created' ? galleryData.created : galleryData.purchased;
 
   return (
@@ -200,7 +244,7 @@ const GalleryCards = () => {
                 )}
                 <div className="flex flex-col items-center space-y-2">
                   {getStatusBadge(item)}
-                  {activeTab === 'created' && getSellButton(item)}
+                  {activeTab === 'created' ? getSellButton(item) : getBuyButton(item)}
                 </div>
               </div>
             </div>

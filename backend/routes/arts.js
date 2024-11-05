@@ -453,14 +453,14 @@ router.get('/marketplace', async (req, res) => {
   }
 });
 
-router.post('/marketplace/buy/:dbId', async (req, res) => {
+router.post('/marketplace/buy/:marketplaceId', async (req, res) => {
   try {
-    const { dbId } = req.params;
+    const { marketplaceId } = req.params;
     const { walletAddress, transactionHash } = req.body;
-    const marketplaceId = parseInt(dbId); // Correctly parse `dbId`
+    const marketId = parseInt(marketplaceId);
 
     console.log('Processing purchase:', {
-      marketplaceId,
+      marketId,
       walletAddress,
       transactionHash
     });
@@ -473,7 +473,7 @@ router.post('/marketplace/buy/:dbId', async (req, res) => {
       });
     }
 
-    // Check if transactionHash is provided and valid
+    // Check if transactionHash is provided
     if (!transactionHash) {
       return res.status(400).json({
         success: false,
@@ -483,7 +483,7 @@ router.post('/marketplace/buy/:dbId', async (req, res) => {
 
     // Get marketplace listing with artwork details
     const listing = await prisma.marketplace.findUnique({
-      where: { id: marketplaceId },
+      where: { id: marketId },
       include: {
         artwork: {
           include: {
@@ -500,11 +500,11 @@ router.post('/marketplace/buy/:dbId', async (req, res) => {
       });
     }
 
-    // Verify artwork status
-    if (!listing.artwork.isApproved || !listing.artwork.isMinted) {
-      return res.status(400).json({
+    // Check if buyer is the artist
+    if (listing.artwork.owner.walletAddress.toLowerCase() === walletAddress.toLowerCase()) {
+      return res.status(403).json({
         success: false,
-        message: "Artwork is not ready for sale"
+        message: "Artists cannot purchase their own artworks"
       });
     }
 
@@ -525,7 +525,7 @@ router.post('/marketplace/buy/:dbId', async (req, res) => {
 
       // Process the purchase in a transaction
       const result = await prisma.$transaction(async (prisma) => {
-        // 1. Update artwork status
+        // Update artwork status
         const updatedArtwork = await prisma.artwork.update({
           where: { dbId: listing.artwork.dbId },
           data: {
@@ -534,7 +534,7 @@ router.post('/marketplace/buy/:dbId', async (req, res) => {
           }
         });
 
-        // 2. Create sale record
+        // Create sale record
         const sale = await prisma.sale.create({
           data: {
             artworkId: listing.artwork.dbId,
@@ -544,9 +544,9 @@ router.post('/marketplace/buy/:dbId', async (req, res) => {
           }
         });
 
-        // 3. Remove marketplace listing
+        // Delete the marketplace listing
         await prisma.marketplace.delete({
-          where: { id: marketplaceId }
+          where: { id: marketId }
         });
 
         return { updatedArtwork, sale };
@@ -583,6 +583,5 @@ router.post('/marketplace/buy/:dbId', async (req, res) => {
     });
   }
 });
-
 
 export default router;
