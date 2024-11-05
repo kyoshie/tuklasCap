@@ -96,6 +96,8 @@ router.get('/fetch/:walletAddress', async (req, res) => {
   try {
     const { walletAddress } = req.params;
 
+    console.log('Fetching data for wallet:', walletAddress);
+
     // Validate wallet address
     if (!walletAddress || !ethers.utils.isAddress(walletAddress)) {
       return res.status(400).json({
@@ -106,9 +108,7 @@ router.get('/fetch/:walletAddress', async (req, res) => {
 
     // Find user by wallet address
     const user = await prisma.user.findUnique({
-      where: {
-        walletAddress: walletAddress
-      }
+      where: { walletAddress }
     });
 
     if (!user) {
@@ -118,13 +118,13 @@ router.get('/fetch/:walletAddress', async (req, res) => {
       });
     }
 
-    // Fetch all artworks owned by the user
-    const artworks = await prisma.artwork.findMany({
+    // Debug: Log user found
+    console.log('Found user:', user);
+
+    // Get created artworks
+    const createdArtworks = await prisma.artwork.findMany({
       where: {
         ownerId: user.id
-      },
-      orderBy: {
-        createdAt: 'desc' // Most recent first
       },
       include: {
         owner: {
@@ -140,19 +140,43 @@ router.get('/fetch/:walletAddress', async (req, res) => {
             reason: true
           }
         }
+      },
+      orderBy: {
+        createdAt: 'desc'
       }
     });
 
-    // Check if artworks is defined and not null
-    if (!artworks) {
-      return res.status(404).json({
-        success: false,
-        message: "No artworks found"
-      });
-    }
+    // Debug: Log created artworks
+    console.log('Found created artworks:', createdArtworks.length);
 
-    // Format the response
-    const formattedArtworks = artworks.map(artwork => ({
+    // Get purchased artworks through Sales table
+    const purchasedArtworks = await prisma.sale.findMany({
+      where: {
+        buyerAddress: walletAddress,
+      },
+      select: {
+        artwork: {
+          include: {
+            owner: {
+              select: {
+                username: true,
+                walletAddress: true
+              }
+            }
+          }
+        },
+        price: true,
+        transactionHash: true,
+        soldAt: true
+      }
+    });
+
+    // Debug: Log purchased artworks
+    console.log('Found purchased artworks:', purchasedArtworks.length);
+    console.log('Purchase details:', purchasedArtworks);
+
+    // Format the artworks for response
+    const formattedCreated = createdArtworks.map(artwork => ({
       dbId: artwork.dbId,
       contractId: artwork.contractId,
       title: artwork.title,
@@ -166,14 +190,45 @@ router.get('/fetch/:walletAddress', async (req, res) => {
       transactionHash: artwork.transactionHash,
       mintTransactionHash: artwork.mintTransactionHash,
       createdAt: artwork.createdAt,
-      artist: artwork.owner.username || 'Unknown',
+      artist: artwork.owner.username || artwork.owner.walletAddress.slice(0, 6),
+      artistWallet: artwork.owner.walletAddress,
       approvalStatus: artwork.approval?.status || null,
       approvalDate: artwork.approval?.createdAt || null
     }));
 
+    // Format purchased artworks
+    const formattedPurchased = purchasedArtworks.map(purchase => {
+      const artwork = purchase.artwork;
+      return {
+        dbId: artwork.dbId,
+        contractId: artwork.contractId,
+        title: artwork.title,
+        description: artwork.description,
+        imageCID: artwork.imageCID,
+        price: purchase.price.toString(),
+        isApproved: artwork.isApproved,
+        isMinted: artwork.isMinted,
+        isSold: artwork.isSold,
+        transactionHash: purchase.transactionHash,
+        purchasedAt: purchase.soldAt,
+        artist: artwork.owner.username || artwork.owner.walletAddress.slice(0, 6),
+        artistWallet: artwork.owner.walletAddress
+      };
+    });
+
+    // Debug: Log formatted response
+    console.log('Sending response with:', {
+      created: formattedCreated.length,
+      purchased: formattedPurchased.length
+    });
+
+    // Send response
     res.status(200).json({
       success: true,
-      artworks: formattedArtworks,
+      artworks: {
+        created: formattedCreated,
+        purchased: formattedPurchased
+      },
       message: "Artworks fetched successfully"
     });
 
@@ -186,7 +241,6 @@ router.get('/fetch/:walletAddress', async (req, res) => {
     });
   }
 });
-
 router.post('/update-hash', async (req, res) => {
   try {
     const { artworkId, transactionHash } = req.body;
@@ -341,6 +395,12 @@ router.put('/approval/:artworkId', async (req, res) => {
 router.get('/marketplace', async (req, res) => {
   try {
     const listings = await prisma.marketplace.findMany({
+      where: {
+        status: 'LISTED',
+        artwork: {
+          isSold: false
+        }
+      },
       include: {
         artwork: {
           include: {
@@ -349,6 +409,12 @@ router.get('/marketplace', async (req, res) => {
                 username: true,
                 walletAddress: true
               }
+            },
+            Sale: {
+              orderBy: {
+                soldAt: 'desc'
+              },
+              take: 1
             }
           }
         }
@@ -370,8 +436,9 @@ router.get('/marketplace', async (req, res) => {
           title: listing.artwork.title,
           description: listing.artwork.description,
           imageCID: listing.artwork.imageCID,
-          artist: listing.artwork.owner.username || 'Anonymous',
-          artistWallet: listing.artwork.owner.walletAddress
+          artist: listing.artwork.owner.username || 'Unknown',
+          artistWallet: listing.artwork.owner.walletAddress,
+          lastSalePrice: listing.artwork.Sale[0]?.price.toString() || null
         }
       }))
     });
@@ -380,23 +447,37 @@ router.get('/marketplace', async (req, res) => {
     console.error('Error fetching marketplace listings:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch marketplace listings'
+      message: 'Failed to fetch marketplace listings',
+      error: error.message
     });
   }
 });
 
-
-router.post('/marketplace/buy/:id', async (req, res) => {
+router.post('/marketplace/buy/:dbId', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { dbId } = req.params;
     const { walletAddress, transactionHash } = req.body;
-    const marketplaceId = parseInt(id);
+    const marketplaceId = parseInt(dbId); // Correctly parse `dbId`
+
+    console.log('Processing purchase:', {
+      marketplaceId,
+      walletAddress,
+      transactionHash
+    });
 
     // Validate wallet address
     if (!walletAddress || !ethers.utils.isAddress(walletAddress)) {
       return res.status(400).json({
         success: false,
         message: "Invalid wallet address"
+      });
+    }
+
+    // Check if transactionHash is provided and valid
+    if (!transactionHash) {
+      return res.status(400).json({
+        success: false,
+        message: "Transaction hash is required"
       });
     }
 
@@ -427,58 +508,74 @@ router.post('/marketplace/buy/:id', async (req, res) => {
       });
     }
 
-    // Verify transaction on blockchain
+    // Verify transaction using the specified provider
     const provider = new ethers.providers.JsonRpcProvider(process.env.ARBITRUM_SEPOLIA_URL);
-    const receipt = await provider.getTransactionReceipt(transactionHash);
+    
+    try {
+      const receipt = await provider.getTransactionReceipt(transactionHash);
 
-    if (!receipt || !receipt.status) {
+      if (!receipt || !receipt.status) {
+        return res.status(400).json({
+          success: false,
+          message: "Transaction not found or failed"
+        });
+      }
+
+      console.log('Transaction verified, processing database updates...');
+
+      // Process the purchase in a transaction
+      const result = await prisma.$transaction(async (prisma) => {
+        // 1. Update artwork status
+        const updatedArtwork = await prisma.artwork.update({
+          where: { dbId: listing.artwork.dbId },
+          data: {
+            isSold: true,
+            soldAt: new Date()
+          }
+        });
+
+        // 2. Create sale record
+        const sale = await prisma.sale.create({
+          data: {
+            artworkId: listing.artwork.dbId,
+            buyerAddress: walletAddress,
+            price: listing.price,
+            transactionHash: transactionHash,
+          }
+        });
+
+        // 3. Remove marketplace listing
+        await prisma.marketplace.delete({
+          where: { id: marketplaceId }
+        });
+
+        return { updatedArtwork, sale };
+      });
+
+      console.log('Purchase completed successfully:', result);
+
+      res.json({
+        success: true,
+        message: 'NFT purchased successfully',
+        saleDetails: {
+          artworkId: result.updatedArtwork.dbId,
+          price: result.sale.price.toString(),
+          buyer: walletAddress,
+          transactionHash: result.sale.transactionHash
+        }
+      });
+
+    } catch (receiptError) {
+      console.error('Error fetching transaction receipt:', receiptError);
       return res.status(400).json({
         success: false,
-        message: "Transaction not found or failed"
+        message: 'Failed to verify transaction hash',
+        error: receiptError.message
       });
     }
 
-    // Update database records
-    await prisma.$transaction(async (prisma) => {
-      // Update artwork
-      await prisma.artwork.update({
-        where: { dbId: listing.artwork.dbId },
-        data: {
-          isSold: true,
-          soldAt: new Date()
-        }
-      });
-
-      // Create sale record
-      await prisma.sale.create({
-        data: {
-          artworkId: listing.artwork.dbId,
-          buyerAddress: walletAddress,
-          price: listing.price,
-          transactionHash: transactionHash
-        }
-      });
-
-      // Remove marketplace listing
-      await prisma.marketplace.delete({
-        where: { id: marketplaceId }
-      });
-    });
-
-    res.json({
-      success: true,
-      message: 'NFT purchased successfully',
-      transactionHash: transactionHash,
-      saleDetails: {
-        artworkId: listing.artwork.dbId,
-        price: listing.price.toString(),
-        buyer: walletAddress
-      }
-    });
-
   } catch (error) {
     console.error('Error processing purchase:', error);
-    
     res.status(500).json({
       success: false,
       message: 'Failed to process purchase',

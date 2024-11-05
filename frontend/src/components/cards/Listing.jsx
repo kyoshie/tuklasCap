@@ -888,55 +888,6 @@ const MarketplaceCards = () => {
     }
   };
 
-  const handleBuy = async (itemId, price) => {
-    try {
-      setProcessingId(itemId);
-
-      // Check if MetaMask is installed
-      if (!window.ethereum) {
-        alert('MetaMask is not installed. Please install it to use this feature.');
-        return;
-      }
-
-      // Request account access if needed
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-
-      // Create a provider and signer
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-
-      // Create a contract instance
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-      // Calculate the value and gas
-      const value = ethers.parseEther(price.toString());
-
-      console.log(value, price)
-      
-      const gasPrice = ((await provider.getFeeData()).gasPrice);
-
-      // Execute the purchase transaction
-      const tx = await contract.buyArt(itemId, {
-        value: value,
-        gasLimit: 300000,
-        gasPrice: gasPrice ,
-      });
-
-      const receipt = await tx.wait();
-      console.log('Purchase successful:', receipt.transactionHash);
-
-      // Update the UI or notify the user
-      alert('NFT purchased successfully!');
-      fetchMarketplaceData(); // Refresh the list
-
-    } catch (error) {
-      console.error('Error purchasing NFT:', error);
-      alert(error.message || 'Failed to purchase NFT');
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
   const getStatusBadge = (price) => {
     return (
       <span className="px-2 py-1 text-xs text-blue-800 bg-blue-200 rounded-full">
@@ -945,6 +896,99 @@ const MarketplaceCards = () => {
     );
   };
 
+  const handleBuy = async (itemId, price, marketplaceId) => {
+    try {
+      setProcessingId(itemId);
+  
+      // Check if MetaMask is installed
+      if (!window.ethereum) {
+        alert('MetaMask is not installed. Please install it to use this feature.');
+        return;
+      }
+  
+      // Request account access if needed
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const walletAddress = accounts[0];
+  
+      // Create a provider and signer
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      // Make sure to await the signer
+      const signer = await provider.getSigner();
+  
+      // Create a contract instance with the signer
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+  
+      // Calculate the value and gas
+      const value = ethers.parseEther(price.toString());
+      const feeData = await provider.getFeeData();
+      const gasPrice = feeData.gasPrice;
+  
+      console.log('Transaction details:', {
+        itemId,
+        value: value.toString(),
+        gasPrice: gasPrice.toString(),
+        contract: CONTRACT_ADDRESS,
+        signer: await signer.getAddress()
+      });
+  
+      // Execute the purchase transaction
+      const tx = await contract.buyArt(itemId, {
+        value: value,
+        gasLimit: ethers.getBigInt(300000), // Convert to BigInt
+        gasPrice: gasPrice
+      });
+  
+      console.log('Transaction sent:', tx.hash);
+  
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      
+      if (!receipt.hash) {
+        throw new Error('Transaction hash is missing, purchase might have failed.');
+      }
+  
+      console.log('Purchase successful:', receipt.hash);
+  
+      // Update backend about the purchase
+      try {
+        const backendResponse = await axios.post(
+          `http://localhost:5000/api/arts/marketplace/buy/${marketplaceId}`,
+          {
+            walletAddress: walletAddress.toLowerCase(),
+            transactionHash: receipt.hash
+          }
+        );
+  
+        console.log('Backend update response:', backendResponse.data);
+  
+        if (backendResponse.data.success) {
+          alert('NFT purchased successfully!');
+          fetchMarketplaceData(); // Refresh the list
+        } else {
+          throw new Error(backendResponse.data.message || 'Failed to update backend');
+        }
+      } catch (backendError) {
+        console.error('Backend update failed:', backendError);
+        alert('Transaction successful but failed to update database. Please contact support.');
+      }
+  
+    } catch (error) {
+      console.error('Error purchasing NFT:', error);
+      // More detailed error message
+      let errorMessage = 'Failed to purchase NFT: ';
+      if (error.code === 'ACTION_REJECTED') {
+        errorMessage += 'Transaction was rejected by user';
+      } else if (error.code === 'INSUFFICIENT_FUNDS') {
+        errorMessage += 'Insufficient funds for purchase';
+      } else {
+        errorMessage += error.message || 'Unknown error occurred';
+      }
+      alert(errorMessage);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+  
   return (
     <div className="h-[90dvh] w-screen lg:items-center md:items-center lg:flex lg:flex-wrap lg:justify-center md:flex md:flex-wrap md:justify-center grid grid-cols-2 overflow-y-auto lg:overflow-y-scroll gap-2">
       {error && (
@@ -957,11 +1001,8 @@ const MarketplaceCards = () => {
         marketplaceItems.map((item) => (
           <div key={item.id} className='md:w-[19rem] h-min m-1 transition-transform duration-300 bg-transparent border border-gray-500 rounded-lg shadow-lg'>
             <img 
-              src={`https://gateway.pinata.cloud/ipfs/${item.artwork.imageCID}`} 
+              src={`https://gateway.pinata.cloud/ipfs/${item.artwork.imageCID}`}
               alt={item.artwork.title} 
-              onError={(e) => { 
-                e.target.src = '/placeholder.png'; 
-              }}
               className='w-full h-[150px] object-cover rounded-t-lg md:h-[200px] lg:h-[200px]' 
             />
             <div className="p-4">
@@ -980,7 +1021,7 @@ const MarketplaceCards = () => {
                 <button 
                   className={`bg-[--orange] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--orange-hover] transition-all p-2 font-customFont
                     ${processingId === item.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  onClick={() => handleBuy(item.tokenId, item.price)}
+                  onClick={() => handleBuy(item.tokenId, item.price, item.id)}
                   disabled={processingId === item.id}
                 >
                   {processingId === item.id ? 'Processing...' : 'Buy Now'}
