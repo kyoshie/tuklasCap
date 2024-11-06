@@ -7,8 +7,8 @@ const Intro = () => {
 
     const connectWallet = async () => {
         if (window.ethereum) {
-            setLoading(true); // Set loading to true
-            setError(''); // Clear any previous errors
+            setLoading(true); 
+            setError(''); 
             try {
                 // Request account access
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -65,13 +65,13 @@ const Intro = () => {
                 setError("Error connecting to wallet or interacting with the server: " + error.message);
                 console.error("Error connecting to wallet or interacting with the server:", error);
             } finally {
-                setLoading(false); // Set loading to false regardless of success or error
+                setLoading(false); 
             }
         } else {
             setError('Please install MetaMask.');
         }
     };
-
+    //front end code using css
     return (
         <div className='text-white'>
             <div className='max-w-[800px] my-[-120px] w-full mx-auto text-center flex flex-col justify-center mt-[170px] lg:my-10 xl:my-32'>
@@ -85,11 +85,11 @@ const Intro = () => {
                 </div>
                 <p className='text-lg font-bold text-gray-400 md:text-xl'>Grab the Opportunity to Discover, Create, and Own Arts through NFT.</p>
 
-                {error && <p className='text-red-500'>{error}</p>} {/* Display error messages */}
+                {error && <p className='text-red-500'>{error}</p>} 
                 <button 
                     className='text-xl hover:bg-[--blue-hover] transition ease-in w-[200px] bg-[--blue] font-medium my-6 mx-auto rounded-md py-2' 
                     onClick={connectWallet}
-                    disabled={loading} // Disable button while loading
+                    disabled={loading} 
                 >
                     {loading ? 'Connecting...' : 'Connect Wallet'}
                 </button>
