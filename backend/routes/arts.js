@@ -331,6 +331,12 @@ router.put('/approval/:artworkId', async (req, res) => {
       });
     }
 
+    const admin = await prisma.user.findFirst({
+      where: {
+        role: "ADMIN"
+      }
+    })
+
     // Start a transaction to update both artwork and create approval
     const [updatedArtwork, approval] = await prisma.$transaction([
       // Update artwork pendingApproval status
@@ -361,7 +367,7 @@ router.put('/approval/:artworkId', async (req, res) => {
           },
           admin: {
             connect: {
-              id: 4// Connect to admin user - make sure this ID exists
+              id: admin.id // Connect to admin user - make sure this ID exists
             }
           },
           status: 'pending'
