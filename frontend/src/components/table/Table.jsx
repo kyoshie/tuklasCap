@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Modal from '../Modal';
-import { BACKEND } from '../constant';
+import { BACKEND } from '../../constant';
 
 
 const Table = () => {

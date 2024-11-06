@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ethers } from 'ethers';
-import { BACKEND } from '../constant';
+import { BACKEND } from '../../constant';
 
 
 const CONTRACT_ADDRESS ="0x9EA0B72072E030C7c607e045D2aC383B5118fd20";
