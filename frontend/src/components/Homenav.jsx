@@ -3,6 +3,7 @@ import { AiOutlineClose, AiOutlineMenu } from 'react-icons/ai';
 import { useNavigate } from 'react-router-dom';
 import Profile from '../pages/Profile';
 import axios from 'axios';
+import { BACKEND } from '../constant';
 
 const Homenav = () => {
     const navigate = useNavigate();
@@ -19,7 +20,7 @@ const Homenav = () => {
 
     const fetchUserData = async (address) => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/getProfile/${address}`);
+            const response = await axios.get(`${BACKEND}/api/getProfile/${address}`);
             const { profilePic } = response.data;
             if (profilePic) {
                 setProfilePicUrl(`data:image/jpeg;base64,${profilePic}`);

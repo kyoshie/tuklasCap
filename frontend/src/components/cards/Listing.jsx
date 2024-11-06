@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ethers } from 'ethers';
+import { BACKEND } from '../constant';
+
 
 const CONTRACT_ADDRESS ="0x9EA0B72072E030C7c607e045D2aC383B5118fd20";
 const CONTRACT_ABI = [
@@ -874,7 +876,7 @@ const Marketplace = () => {
   const fetchMarketplaceData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/arts/marketplace');
+      const response = await axios.get(`${BACKEND}/api/arts/marketplace`);
       
       if (response.data.success) {
         setMarketplaceItems(response.data.listings); // Changed from items to listings
@@ -978,7 +980,7 @@ const Marketplace = () => {
       // Update backend about the purchase
       try {
         const backendResponse = await axios.post(
-          `http://localhost:5000/api/arts/marketplace/buy/${marketplaceId}`,
+          `${BACKEND}/api/arts/marketplace/buy/${marketplaceId}`,
           {
             walletAddress: currentAccount.toLowerCase(),
             transactionHash: receipt.hash

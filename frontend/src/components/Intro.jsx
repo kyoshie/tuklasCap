@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { ReactTyped } from 'react-typed';
+import { BACKEND } from '../constant';
+
 
 const Intro = () => {
     const [loading, setLoading] = useState(false);
@@ -22,7 +24,7 @@ const Intro = () => {
                 console.log("Attempting to save wallet address:", walletAddress);
 
                 // Fetch request to save the wallet address
-                const response = await fetch('http://localhost:5000/api/saveWallet', {
+                const response = await fetch(`${BACKEND}/api/saveWallet`, {
                     method: 'POST', // Ensure this matches the route definition
                     headers: {
                         'Content-Type': 'application/json',
@@ -36,7 +38,7 @@ const Intro = () => {
                     console.log("Wallet address saved successfully!", result);
 
                     // Check if the user is admin
-                    const checkAdminResponse = await fetch('http://localhost:5000/api/checkAdmin', {
+                    const checkAdminResponse = await fetch(`${BACKEND}/api/checkAdmin`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

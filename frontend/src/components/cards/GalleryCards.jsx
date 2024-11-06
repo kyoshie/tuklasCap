@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { BACKEND } from '../constant';
+
 
 const GalleryCards = () => {
   const [galleryData, setGalleryData] = useState({ created: [], purchased: [] });
@@ -17,7 +19,7 @@ const GalleryCards = () => {
           return;
         }
         
-        const response = await axios.get(`http://localhost:5000/api/arts/fetch/${walletAddress}`);
+        const response = await axios.get(`${BACKEND}/api/arts/fetch/${walletAddress}`);
 
         if (response.data.success) {
           setGalleryData(response.data.artworks);
@@ -47,7 +49,7 @@ const GalleryCards = () => {
         throw new Error('Please connect your wallet first');
       }
   
-      const response = await axios.put(`http://localhost:5000/api/arts/approval/${dbId}`, {
+      const response = await axios.put(`${BACKEND}/api/arts/approval/${dbId}`, {
         walletAddress
       });
 

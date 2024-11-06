@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { BACKEND } from '../constant';
+
 
 const ProfileModal = ({ walletAddress, closeModal }) => {
   const [isOpen, setIsOpen] = useState(false); // State for viewing profile modal
@@ -16,7 +18,7 @@ const ProfileModal = ({ walletAddress, closeModal }) => {
 
   const fetchUserData = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/getProfile/${walletAddress}`);
+      const response = await axios.get(`${BACKEND}/api/getProfile/${walletAddress}`);
       const { username, bio, profilePic } = response.data;
       setUsername(username);
       setBio(bio);
@@ -52,7 +54,7 @@ const ProfileModal = ({ walletAddress, closeModal }) => {
     }
 
     try {
-      const response = await axios.post("http://localhost:5000/api/updateProfile", formData, {
+      const response = await axios.post(`${BACKEND}/api/updateProfile`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

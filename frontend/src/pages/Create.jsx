@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom"; // Add this import
 import {ethers} from 'ethers';
+import { BACKEND } from '../constant';
+
 
 function CreateNFT() {
   
@@ -974,7 +976,7 @@ function CreateNFT() {
   
       // Upload to IPFS to get IPFS hash
       const uploadResponse = await axios.post(
-        "http://localhost:5000/api/arts/upload",
+        `${BACKEND}/api/arts/upload`,
         formData,
         {
           headers: {
@@ -995,7 +997,7 @@ function CreateNFT() {
       console.log('Transaction confirmed:', receipt.transactionHash);
   
       // Update artwork with transaction hash
-      await axios.post("http://localhost:5000/api/arts/update-hash", {
+      await axios.post(`${BACKEND}/api/arts/update-hash`, {
         artworkId: uploadResponse.data.artwork.dbId,
         transactionHash: receipt.transactionHash
       });

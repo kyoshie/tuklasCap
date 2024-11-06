@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Modal from '../Modal';
+import { BACKEND } from '../constant';
+
 
 const Table = () => {
     const [artworks, setArtworks] = useState([]);
@@ -16,7 +18,7 @@ const Table = () => {
     //for fetching artworks to admin
     const fetchPendingArtworks = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/admin/artworks');
+            const response = await axios.get(`${BACKEND}/api/admin/artworks`);
             console.log('Fetched artworks:', response.data);
             
             if (response.data.success) {
@@ -39,7 +41,7 @@ const Table = () => {
             const adminId = 4; //admin id that is in the database
             
             const response = await axios.patch(
-                `http://localhost:5000/api/admin/approve/${dbId}`,
+                `${BACKEND}/api/admin/approve/${dbId}`,
                 {
                     approved: isApproved,
                     adminId: adminId,
