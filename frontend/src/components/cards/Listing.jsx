@@ -1118,7 +1118,7 @@ const Marketplace = () => {
                       onClick={() => handleCancelListing(item.id)}
                       disabled={cancellingId === item.id}
                     >
-                      {cancellingId === item.id ? 'Cancelling...' : 'Cancel Listing'}
+                      {cancellingId === item.id ? 'Cancelling...' : 'Cancel List'}
                     </button>
                   ) : (
                     <button 
