@@ -1,38 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BACKEND } from '../../constant';
+import { useNavigate } from 'react-router-dom';
 
 
 const GalleryCards = () => {
+  const navigate = useNavigate();
   const [galleryData, setGalleryData] = useState({ created: [], purchased: [] });
   const [error, setError] = useState(null);
   const [processingId, setProcessingId] = useState(null);
   const [activeTab, setActiveTab] = useState('created');
+  const [relistingId, setRelistingId] = useState(null);
+
+
+  const fetchGalleryData = async () => {
+    try {
+      const walletAddress = localStorage.getItem('walletAddress');
+      
+      if (!walletAddress) {
+        setError('Please connect your wallet');
+        return;
+      }
+      
+      const response = await axios.get(`${BACKEND}/api/arts/fetch/${walletAddress}`);
+
+      if (response.data.success) {
+        setGalleryData(response.data.artworks);
+      } else {
+        setError(response.data.message || 'Failed to fetch artworks');
+      }
+    } catch (error) {
+      console.error('Error details:', error);
+      setError(error.response?.data?.message || 'Failed to load gallery data');
+    }
+  };
 
   useEffect(() => {
-    const fetchGalleryData = async () => {
-      try {
-        const walletAddress = localStorage.getItem('walletAddress');
-        
-        if (!walletAddress) {
-          setError('Please connect your wallet');
-          return;
-        }
-        
-        const response = await axios.get(`${BACKEND}/api/arts/fetch/${walletAddress}`);
+    fetchGalleryData();
+  }, []);
 
-        if (response.data.success) {
-          setGalleryData(response.data.artworks);
-        } else {
-          setError(response.data.message || 'Failed to fetch artworks');
-        }
-      } catch (error) {
-        console.error('Error details:', error);
-        setError(error.response?.data?.message || 'Failed to load gallery data');
-      }
+  // Add an effect to refresh data when navigating back to gallery
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchGalleryData();
     };
 
-    fetchGalleryData();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   const isOwner = (artwork) => {
@@ -54,6 +68,7 @@ const GalleryCards = () => {
       });
 
       if (response.data.success) {
+        alert('Artwork submitted for approval successfully!');
         setGalleryData(prevData => ({
           ...prevData,
           created: prevData.created.map(card =>
@@ -66,7 +81,6 @@ const GalleryCards = () => {
               : card
           )
         }));
-        alert('Artwork submitted for approval successfully!');
       }
     } catch (error) {
       console.error('Error submitting for approval:', error);
@@ -81,7 +95,6 @@ const GalleryCards = () => {
       alert("You cannot purchase your own artwork");
       return;
     }
-    // Your existing buy logic here
   };
   
   const getStatusBadge = (artwork) => {
@@ -130,27 +143,109 @@ const GalleryCards = () => {
     return null;
   };
 
+  const handleRelist = async (artwork) => {
+    try {
+      setRelistingId(artwork.dbId);
+      const walletAddress = localStorage.getItem('walletAddress');
+
+      if (!walletAddress) {
+        throw new Error('Please connect your wallet first');
+      }
+
+      const response = await axios.post(
+        `${BACKEND}/api/arts/marketplace/relist/${artwork.dbId}`,
+        {
+          walletAddress,
+          price: artwork.price
+        }
+      );
+
+      if (response.data.success) {
+        alert('Artwork relisted successfully!');
+        // Update local state before navigating
+        setGalleryData(prevData => ({
+          ...prevData,
+          created: prevData.created.map(card =>
+            card.dbId === artwork.dbId
+              ? {
+                  ...card,
+                  marketplace: response.data.listing
+                }
+              : card
+          )
+        }));
+        navigate('/marketplace');
+      }
+    } catch (error) {
+      console.error('Error relisting artwork:', error);
+      alert(error.response?.data?.message || 'Failed to relist artwork');
+    } finally {
+      setRelistingId(null);
+    }
+  };
+  
   const getSellButton = (item) => {
-    if (item.isSold || item.approvalStatus === 'rejected') return null;
-    
-    if (item.isMinted) return (
-      <button 
+    if (item.isSold) return (
+      <button
         className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
         disabled
       >
-        Minted
-      </button>
-    );
-    
-    if (item.pendingApproval) return (
-      <button 
-        className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
-        disabled
-      >
-        Pending
+        Sold
       </button>
     );
 
+    if (item.approvalStatus === 'rejected') return null;
+  
+    // Show Relist button if artwork is minted, approved, and not in marketplace
+    if (item.isMinted && item.isApproved && !item.marketplace) {
+      return (
+        <button 
+          className={`bg-[--orange] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--orange-hover] transition-all p-2 font-customFont
+            ${relistingId === item.dbId ? 'opacity-50 cursor-not-allowed' : ''}`}
+          onClick={() => handleRelist(item)}
+          disabled={relistingId === item.dbId}
+        >
+          {relistingId === item.dbId ? 'Relisting...' : 'Relist'}
+        </button>
+      );
+    }
+  
+    // If the artwork is listed in marketplace
+    if (item.marketplace) {
+      return (
+        <button 
+          className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
+          disabled
+        >
+          Listed
+        </button>
+      );
+    }
+  
+    // Show Minted button if the artwork is minted
+    if (item.isMinted) {
+      return (
+        <button 
+          className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
+          disabled
+        >
+          Minted
+        </button>
+      );
+    }
+    
+    if (item.pendingApproval) {
+      return (
+        <button 
+          className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
+          disabled
+        >
+          Pending
+        </button>
+      );
+    }
+  
+    // Default Sell button
     return (
       <button 
         className={`bg-[--blue] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--blue-hover] transition-all p-2 font-customFont
@@ -163,6 +258,7 @@ const GalleryCards = () => {
     );
   };
 
+  
   const getBuyButton = (item) => {
     if (item.isSold) return null;
 

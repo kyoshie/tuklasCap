@@ -95,7 +95,7 @@ contract TuklasArtMarketplace is ERC721URIStorage, ReentrancyGuard, Ownable {
         Art storage art = artPieces[_artId];
         require(art.isApproved, "Artwork not approved");
         require(art.isMinted, "Artwork not minted as an NFT yet");
-        require(!art.isSold, "Artwork is already sold"); // Ensure the artwork is not already sold
+        require(!art.isSold, "Artwork is already sold");
         require(msg.value >= art.price, "Insufficient funds");
 
         uint256 excessAmount = msg.value - art.price;

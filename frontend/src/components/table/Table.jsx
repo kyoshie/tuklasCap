@@ -38,7 +38,7 @@ const Table = () => {
     const handleApproval = async (dbId, isApproved) => {
         try {
             setLoading(true);
-            const adminId = 4; //admin id that is in the database
+            const adminId = 4; 
             
             const response = await axios.patch(
                 `${BACKEND}/api/admin/approve/${dbId}`,

@@ -4,13 +4,13 @@ import { BACKEND } from '../constant';
 
 
 const ProfileModal = ({ walletAddress, closeModal }) => {
-  const [isOpen, setIsOpen] = useState(false); // State for viewing profile modal
-  const [isEditOpen, setIsEditOpen] = useState(false); // State for editing profile modal
-  const [username, setUsername] = useState(""); // Username state
-  const [bio, setBio] = useState(""); // Bio state
-  const [profilePic, setProfilePic] = useState(null); // Profile picture state
-  const [profilePicName, setProfilePicName] = useState(""); // Profile picture name state
-  const [profilePicUrl, setProfilePicUrl] = useState(""); // Profile picture URL state
+  const [isOpen, setIsOpen] = useState(false); 
+  const [isEditOpen, setIsEditOpen] = useState(false); 
+  const [username, setUsername] = useState(""); 
+  const [bio, setBio] = useState(""); 
+  const [profilePic, setProfilePic] = useState(null); 
+  const [profilePicName, setProfilePicName] = useState(""); 
+  const [profilePicUrl, setProfilePicUrl] = useState(""); 
 
   useEffect(() => {
     fetchUserData();

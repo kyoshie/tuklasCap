@@ -6,8 +6,6 @@ import profileRoute from "./routes/profile.js";
 import artsRoute from "./routes/arts.js";
 import adminRoute from "./routes/admin.js"
 
-
-
 // Load environment variables
 dotenv.config();
 
@@ -23,7 +21,6 @@ app.use("/api", walletRoute);
 app.use("/api", profileRoute);
 app.use("/api/arts", artsRoute);
 app.use("/api/admin", adminRoute)
-
 
 // Error handling middleware
 app.use((err, req, res, next) => {

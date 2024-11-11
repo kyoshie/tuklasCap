@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ethers } from 'ethers';
+import { useNavigate } from 'react-router-dom';
 import { BACKEND } from '../../constant';
 
 
@@ -865,13 +866,14 @@ const CONTRACT_ABI = [
     "type": "receive"
   }
 ]
-
 const Marketplace = () => {
   const [marketplaceItems, setMarketplaceItems] = useState([]);
   const [error, setError] = useState(null);
   const [processingId, setProcessingId] = useState(null);
+  const [cancellingId, setCancellingId] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const fetchMarketplaceData = async () => {
     try {
@@ -879,7 +881,7 @@ const Marketplace = () => {
       const response = await axios.get(`${BACKEND}/api/arts/marketplace`);
       
       if (response.data.success) {
-        setMarketplaceItems(response.data.listings); // Changed from items to listings
+        setMarketplaceItems(response.data.listings); 
         setError(null);
       } else {
         setError(response.data.message || 'Failed to fetch marketplace items');
@@ -907,7 +909,6 @@ const Marketplace = () => {
     getAccounts();
     fetchMarketplaceData();
 
-    // Listen for account changes
     if (window.ethereum) {
       window.ethereum.on('accountsChanged', (newAccounts) => {
         setAccounts(newAccounts);
@@ -915,12 +916,53 @@ const Marketplace = () => {
     }
 
     return () => {
-      // Cleanup listener
       if (window.ethereum) {
         window.ethereum.removeListener('accountsChanged', setAccounts);
       }
     };
   }, []);
+
+  const handleCancelListing = async (marketplaceId) => {
+    try {
+      setCancellingId(marketplaceId);
+
+      // Get current account
+      const currentAccount = accounts[0];
+      if (!currentAccount) {
+        alert('Please connect your wallet first');
+        return;
+      }
+
+      // Show confirmation dialog
+      if (!window.confirm('Are you sure you want to cancel this listing?')) {
+        return;
+      }
+
+      // Call backend to cancel the listing
+      const response = await axios.delete(
+        `${BACKEND}/api/arts/marketplace/cancel/${marketplaceId}`,
+        {
+          data: { walletAddress: currentAccount.toLowerCase() }
+        }
+      );
+
+      if (response.data.success) {
+        alert('Listing cancelled successfully!');
+        // Remove the cancelled item from marketplace items
+        setMarketplaceItems(prev => prev.filter(item => item.id !== marketplaceId));
+        // Navigate to gallery to show the artwork in created items
+        navigate('/gallery');
+      } else {
+        throw new Error(response.data.message || 'Failed to cancel listing');
+      }
+
+    } catch (error) {
+      console.error('Error cancelling listing:', error);
+      alert('Failed to cancel listing: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   const handleBuy = async (itemId, price, marketplaceId) => {
     try {
@@ -1040,7 +1082,7 @@ const Marketplace = () => {
       
       {marketplaceItems && marketplaceItems.length > 0 ? (
         marketplaceItems.map((item) => {
-          const isOwner = accounts[0]?.toLowerCase() === item.artwork.artistWallet?.toLowerCase(); // Updated to match your route response
+          const isOwner = accounts[0]?.toLowerCase() === item.artwork.artistWallet?.toLowerCase();
 
           return (
             <div key={item.id} className='md:w-[19rem] h-min m-1 transition-transform duration-300 bg-transparent border border-gray-500 rounded-lg shadow-lg'>
@@ -1071,11 +1113,12 @@ const Marketplace = () => {
                   {getStatusBadge(item.price)}
                   {isOwner ? (
                     <button 
-                      className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
-                      disabled
-                      title="You cannot buy your own artwork"
+                      className={`bg-red-500 w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-red-600 transition-all p-2 font-customFont
+                        ${cancellingId === item.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      onClick={() => handleCancelListing(item.id)}
+                      disabled={cancellingId === item.id}
                     >
-                      Your Artwork
+                      {cancellingId === item.id ? 'Cancelling...' : 'Cancel Listing'}
                     </button>
                   ) : (
                     <button 

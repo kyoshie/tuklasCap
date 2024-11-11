@@ -100,6 +100,7 @@ router.get('/fetch/:walletAddress', async (req, res) => {
 
     // Validate wallet address
     if (!walletAddress || !ethers.utils.isAddress(walletAddress)) {
+      
       return res.status(400).json({
         success: false,
         message: "Invalid wallet address"
@@ -585,6 +586,189 @@ router.post('/marketplace/buy/:marketplaceId', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to process purchase',
+      error: error.message
+    });
+  }
+});
+
+
+router.delete('/marketplace/cancel/:marketplaceId', async (req, res) => {
+  try {
+    const { marketplaceId } = req.params;
+    const { walletAddress } = req.body;
+    const marketId = parseInt(marketplaceId);
+
+    // Validate wallet address
+    if (!walletAddress || !ethers.utils.isAddress(walletAddress)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid wallet address"
+      });
+    }
+
+    // Fetch the marketplace listing with artwork and owner details
+    const listing = await prisma.marketplace.findUnique({
+      where: { id: marketId },
+      include: {
+        artwork: {
+          include: {
+            owner: true // Include owner to get walletAddress
+          }
+        }
+      }
+    });
+
+    // Check if listing exists
+    if (!listing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Marketplace listing not found',
+      });
+    }
+
+    // Check if the wallet address matches the artwork owner
+    if (listing.artwork.owner.walletAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to cancel this listing',
+      });
+    }
+
+    // Process the cancellation in a transaction
+    const result = await prisma.$transaction(async (prisma) => {
+      // Update artwork
+      const updatedArtwork = await prisma.artwork.update({
+        where: { dbId: listing.artwork.dbId },
+        data: {
+          isSold: false,
+          pendingApproval: false
+        }
+      });
+
+      // Delete the marketplace listing
+      await prisma.marketplace.delete({
+        where: { id: marketId }
+      });
+
+      return { updatedArtwork };
+    });
+
+    res.json({
+      success: true,
+      message: 'Marketplace listing cancelled successfully',
+      details: {
+        artworkId: result.updatedArtwork.dbId,
+        cancelledAt: new Date()
+      }
+    });
+
+  } catch (error) {
+    console.error('Error cancelling listing:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel listing',
+      error: error.message
+    });
+  }
+});
+
+router.post('/marketplace/relist/:artworkId', async (req, res) => {
+  try {
+    const { artworkId } = req.params;
+    const { walletAddress, price } = req.body;
+    const artId = parseInt(artworkId);
+
+    // Validate inputs
+    if (!walletAddress || !ethers.utils.isAddress(walletAddress)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid wallet address"
+      });
+    }
+
+    if (!price || isNaN(parseFloat(price))) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid price"
+      });
+    }
+
+    // Find the artwork and verify ownership
+    const artwork = await prisma.artwork.findUnique({
+      where: { dbId: artId },
+      include: {
+        owner: true,
+        marketplace: true
+      }
+    });
+
+    if (!artwork) {
+      return res.status(404).json({
+        success: false,
+        message: "Artwork not found"
+      });
+    }
+
+    if (artwork.owner.walletAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+      return res.status(403).json({
+        success: false,
+        message: "You don't have permission to relist this artwork"
+      });
+    }
+
+    // Check if the artwork can be relisted
+    if (!artwork.isMinted || !artwork.isApproved) {
+      return res.status(400).json({
+        success: false,
+        message: "Artwork must be minted and approved to be listed"
+      });
+    }
+
+    // Check if already listed
+    if (artwork.marketplace) {
+      return res.status(400).json({
+        success: false,
+        message: "Artwork is already listed in the marketplace"
+      });
+    }
+
+    // Use a transaction to ensure data consistency
+    const result = await prisma.$transaction(async (prisma) => {
+      // Create marketplace listing
+      const listing = await prisma.marketplace.create({
+        data: {
+          artwork: {
+            connect: { dbId: artId }
+          },
+          price: parseFloat(price),
+          tokenId: artwork.contractId,
+          status: 'LISTED'
+        }
+      });
+
+      // Update artwork
+      const updatedArtwork = await prisma.artwork.update({
+        where: { dbId: artId },
+        data: {
+          price: parseFloat(price),
+          listedAt: new Date()
+        }
+      });
+
+      return { listing, updatedArtwork };
+    });
+
+    res.json({
+      success: true,
+      listing: result.listing,
+      message: "Artwork relisted successfully"
+    });
+
+  } catch (error) {
+    console.error('Error relisting artwork:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to relist artwork',
       error: error.message
     });
   }

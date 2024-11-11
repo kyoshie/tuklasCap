@@ -73,7 +73,7 @@ const Homenav = () => {
 
             <div className="relative inline-block text-left">
                 <button onClick={toggleDropdown} className="flex items-center w-10 h-10 space-x-2">
-                    <img className="object-cover w-10 h-10 rounded-full md:rounded-full" src={profilePicUrl || "arts.jpg"} alt="User" />
+                    <img className="object-cover w-10 h-10 rounded-full md:rounded-full" src={profilePicUrl} alt="User" />
                 </button>
 
                 {isOpen && (
