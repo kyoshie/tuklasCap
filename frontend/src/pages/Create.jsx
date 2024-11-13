@@ -1070,7 +1070,7 @@ function CreateNFT() {
 
           <div>
             <label className="block mb-2 text-sm font-bold text-gray-700 md:text-xl" htmlFor="price">
-              Price (ETH)
+              Price (Ethereum)
             </label>
             <input
               type="number"
