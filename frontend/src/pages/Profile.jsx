@@ -3,6 +3,24 @@ import axios from "axios";
 import { BACKEND } from '../constant';
 
 
+const api = axios.create({
+  baseURL: BACKEND,
+  headers: {
+      'Content-Type': 'application/json'
+  }
+});
+
+// Add request interceptor to automatically add auth token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
 const ProfileModal = ({ walletAddress, closeModal }) => {
   const [isOpen, setIsOpen] = useState(false); 
   const [isEditOpen, setIsEditOpen] = useState(false); 
@@ -18,18 +36,30 @@ const ProfileModal = ({ walletAddress, closeModal }) => {
 
   const fetchUserData = async () => {
     try {
-      const response = await axios.get(`${BACKEND}/api/getProfile/${walletAddress}`);
-      const { username, bio, profilePic } = response.data;
-      setUsername(username);
-      setBio(bio);
-      if (profilePic) {
-        setProfilePicUrl(`data:image/jpeg;base64,${profilePic}`);
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
-  };
+        const token = localStorage.getItem('token');
+        console.log('Fetching with token:', token); // Debug log
 
+        const response = await axios.get(`${BACKEND}/api/getProfile/${walletAddress}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const { username, bio, profilePic } = response.data;
+        setUsername(username);
+        setBio(bio);
+        if (profilePic) {
+            setProfilePicUrl(`data:image/jpeg;base64,${profilePic}`);
+        }
+    } catch (error) {
+        console.error("Error Details:", {
+            message: error.message,
+            status: error.response?.status,
+            data: error.response?.data,
+            headers: error.config?.headers
+        });
+    }
+};
   const toggleModal = () => {
     setIsOpen(!isOpen); // Toggle view profile modal
   };
@@ -56,7 +86,8 @@ const ProfileModal = ({ walletAddress, closeModal }) => {
     try {
       const response = await axios.post(`${BACKEND}/api/updateProfile`, formData, {
         headers: {
-          "Content-Type": "multipart/form-data",
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data'
         },
       });
       alert("Profile changes saved!");

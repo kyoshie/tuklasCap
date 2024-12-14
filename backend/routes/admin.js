@@ -3,17 +3,18 @@ import { PrismaClient } from '@prisma/client';
 import { ethers } from 'ethers';
 import TuklasArtMarketplaceABI from '../artifacts/contracts/Tuklas.sol/TuklasArtMarketplace.json' assert {type: 'json'};
 import dotenv from 'dotenv';
+import authMiddleware from '../auth.js';
 
 dotenv.config();
 const prisma = new PrismaClient();
-const router = express.Router();
+const protectedRouter = express.Router();
 
 // Provider setup
 const provider = new ethers.providers.JsonRpcProvider(process.env.ARBITRUM_SEPOLIA_URL);
 const contractAddress = process.env.CONTRACT_ADDRESS;
 
 // Get all pending artworks for admin review
-router.get('/artworks', async (req, res) => {
+protectedRouter.get('/artworks', authMiddleware(['ADMIN']), async (req, res) => {
   try {
     const pendingArtworks = await prisma.artwork.findMany({
       where: { 
@@ -59,7 +60,7 @@ router.get('/artworks', async (req, res) => {
 });
 
 // Handle artwork approval/rejection
-router.patch('/approve/:dbId', async (req, res) => {
+protectedRouter.patch('/approve/:dbId', authMiddleware(['ADMIN']),  async (req, res) => {
   try {
     const { dbId } = req.params;
     const { approved, adminId, reason } = req.body;
@@ -209,4 +210,5 @@ router.patch('/approve/:dbId', async (req, res) => {
     });
   }
 });
-export default router;
+
+export {protectedRouter};

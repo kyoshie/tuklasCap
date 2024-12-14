@@ -4,6 +4,26 @@ import Modal from '../Modal';
 import { BACKEND } from '../../constant';
 
 
+const api = axios.create({
+    baseURL: BACKEND,
+    headers: {
+        'Content-Type': 'application/json'
+    }
+  });
+  
+  // Add request interceptor
+  api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  }, (error) => {
+    return Promise.reject(error);
+  });
+  
+  
+
 const Table = () => {
     const [artworks, setArtworks] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -18,7 +38,14 @@ const Table = () => {
     //for fetching artworks to admin
     const fetchPendingArtworks = async () => {
         try {
-            const response = await axios.get(`${BACKEND}/api/admin/artworks`);
+            const token = localStorage.getItem('token'); 
+            const response = await axios.get(`${BACKEND}/api/admin/artworks`,
+                {
+                    headers: {
+                      'Authorization': `Bearer ${token}`
+                  }
+                  }
+            );
             console.log('Fetched artworks:', response.data);
             
             if (response.data.success) {
@@ -37,6 +64,7 @@ const Table = () => {
     //for approval
     const handleApproval = async (dbId, isApproved) => {
         try {
+            const token = localStorage.getItem('token'); 
             setLoading(true);
             const adminId = 4; 
             
@@ -46,7 +74,12 @@ const Table = () => {
                     approved: isApproved,
                     adminId: adminId,
                     reason: isApproved ? 'Artwork meets guidelines' : 'Artwork rejected'
-                }
+                },
+                {
+                    headers: {
+                      'Authorization': `Bearer ${token}`
+                  }
+                  }
             );
 
             if (response.data.success) {

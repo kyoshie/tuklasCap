@@ -1,6 +1,4 @@
 import { createBrowserRouter } from "react-router-dom";
-
-import App from './App';
 import Navbar from "./components/Navbar";
 import About from './pages/About';
 import Intro from './components/Intro';
@@ -11,69 +9,64 @@ import Gallery from './pages/Gallery';
 import Features from './pages/Features';
 import Create from './pages/Create';
 import Admin from './pages/Admin';
+import ProtectedRoute from './components/ProtectedRoute';
+import Error from './components/Error'; // Make sure you have this component
 
-
-export const router = createBrowserRouter ([
+export const router = createBrowserRouter([
     {
         path: "/",
-        element: <App />,
+        element: <>
+            <Navbar />
+            <Intro />
+        </>,
         errorElement: <Error />,
-      },
-      {
+    },
+    {
         path: "/about",
         element: <>
-          <Navbar/>
-          <About/>
+            <Navbar />
+            <About />
         </>
-      },
-      {
-        path: "/",
-        element: <>
-         <Navbar/>
-        <Intro/>
-          </>
-      },
-      {
+    },
+    {
         path: "/marketplace",
-        element: <>
-        <Homenav/>
-        <Marketplace/>
-          </>
-      },
-      {
+        element: <ProtectedRoute>
+            <Homenav />
+            <Marketplace />
+        </ProtectedRoute>
+    },
+    {
         path: "/home",
-        element: <>
-        <Homenav/>
-        <Home/>
-          </>
-      },
-      {
+        element: <ProtectedRoute>
+            <Homenav />
+            <Home />
+        </ProtectedRoute>
+    },
+    {
         path: "/gallery",
-        element: <>
-        <Homenav/>
-        <Gallery/>
-          </>
-      },
-      {
+        element: <ProtectedRoute>
+            <Homenav />
+            <Gallery />
+        </ProtectedRoute>
+    },
+    {
         path: "/create",
-        element: <>
-        <Homenav/>
-        <Create/>
-          </>
-      },
-      {
+        element: <ProtectedRoute>
+            <Homenav />
+            <Create />
+        </ProtectedRoute>
+    },
+    {
         path: "/features",
         element: <>
-        <Navbar/>
-        <Features/>
-          </>
-      },
-      {
+            <Navbar />
+            <Features />
+        </>
+    },
+    {
         path: "/admin",
-        element: <>
-          <Admin/>
-          </>
-      },
-      
-      
+        element: <ProtectedRoute requireAdmin={true}>
+            <Admin />
+        </ProtectedRoute>
+    },
 ]);

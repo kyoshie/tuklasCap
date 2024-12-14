@@ -1,22 +1,7 @@
-import Navbar from './components/Navbar';
-import Intro  from './components/Intro';
 
 
 function App() {
-  return (
-    <>
-     <Navbar/>
-     <Intro/>
-     
-    </>
-  )
+    return null; // or return any global providers if needed
 }
 
-export default App
-
-
-
-
-
-
-
+export default App;

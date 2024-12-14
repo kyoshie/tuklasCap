@@ -4,6 +4,23 @@ import { ethers } from 'ethers';
 import { useNavigate } from 'react-router-dom';
 import { BACKEND } from '../../constant';
 
+const api = axios.create({
+  baseURL: BACKEND,
+  headers: {
+      'Content-Type': 'application/json'
+  }
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
 
 const CONTRACT_ADDRESS ="0x9EA0B72072E030C7c607e045D2aC383B5118fd20";
 const CONTRACT_ABI = [
@@ -924,6 +941,7 @@ const Marketplace = () => {
 
   const handleCancelListing = async (marketplaceId) => {
     try {
+      const token = localStorage.getItem('token'); 
       setCancellingId(marketplaceId);
 
       // Get current account
@@ -942,6 +960,9 @@ const Marketplace = () => {
       const response = await axios.delete(
         `${BACKEND}/api/arts/marketplace/cancel/${marketplaceId}`,
         {
+          headers: {
+            'Authorization': `Bearer ${token}`
+        },
           data: { walletAddress: currentAccount.toLowerCase() }
         }
       );
@@ -1021,12 +1042,18 @@ const Marketplace = () => {
 
       // Update backend about the purchase
       try {
+        const token = localStorage.getItem('token'); 
         const backendResponse = await axios.post(
           `${BACKEND}/api/arts/marketplace/buy/${marketplaceId}`,
           {
             walletAddress: currentAccount.toLowerCase(),
             transactionHash: receipt.hash
-          }
+          },
+          {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        }
         );
 
         console.log('Backend update response:', backendResponse.data);

@@ -5,11 +5,13 @@ import { ethers } from 'ethers';
 import axios from 'axios';
 import FormData from 'form-data';
 import dotenv from 'dotenv';
+import authMiddleware from '../auth.js';
 
 
 dotenv.config();
 const prisma = new PrismaClient();
-const router = express.Router();
+const publicRouter = express.Router();
+const protectedRouter = express.Router();
 
 
 const upload = multer({
@@ -19,255 +21,252 @@ const upload = multer({
 });
 
 
-router.post('/upload', upload.single('file'), async (req, res) => {
+protectedRouter.post('/upload', 
+  upload.single('file'), 
+  async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "No file uploaded" });
-    }
-
-    const { title, description, price, walletAddress, transactionHash, contractId } = req.body;
-
-    // Validate the wallet address format
-    if (!ethers.utils.isAddress(walletAddress)) {
-      return res.status(400).json({ success: false, message: "Invalid wallet address" });
-    }
-
-    // Create or retrieve user
-    let user = await prisma.user.findUnique({ where: { walletAddress } });
-    if (!user) {
-      user = await prisma.user.create({ data: { walletAddress, role: 'USER' } });
-    }
-
-    // Pinata upload
-    const pinataFormData = new FormData();
-    pinataFormData.append('file', req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: req.file.mimetype,
-    });
-
-    const pinataRes = await axios.post(
-      'https://api.pinata.cloud/pinning/pinFileToIPFS',
-      pinataFormData,
-      {
-        maxBodyLength: Infinity,
-        headers: {
-          ...pinataFormData.getHeaders(),
-          'pinata_api_key': process.env.PINATA_API_KEY,
-          'pinata_secret_api_key': process.env.PINATA_API_SECRET,
-        }
+      if (!req.file) {
+          return res.status(400).json({ success: false, message: "No file uploaded" });
       }
-    );
 
-    // Save to database
-    const artwork = await prisma.artwork.create({
-      data: {
-        contractId: parseInt(contractId),
-        title,
-        description,
-        imageCID: pinataRes.data.IpfsHash,
-        price: parseFloat(price),
-        isApproved: false,
-        isMinted: false,
-        isSold: false,
-        pendingApproval: false,
-        transactionHash: transactionHash, // From frontend transaction
-        owner: { connect: { id: user.id } }
-      }
-    });
+      const { title, description, price, contractId } = req.body;
+      const walletAddress = req.user.walletAddress; 
 
-    res.status(200).json({
-      success: true,
-      artwork,
-      ipfsHash: pinataRes.data.IpfsHash,
-      message: "Artwork uploaded successfully and posted in the gallery"
-    });
-
-  } catch (error) {
-    console.error('Error handling upload:', error.message);
-    res.status(500).json({
-      success: false,
-      message: "Failed to process upload",
-      error: error.message
-    });
-  }
-});
-
-router.get('/fetch/:walletAddress', async (req, res) => {
-  try {
-    const { walletAddress } = req.params;
-
-    console.log('Fetching data for wallet:', walletAddress);
-
-    // Validate wallet address
-    if (!walletAddress || !ethers.utils.isAddress(walletAddress)) {
-      
-      return res.status(400).json({
-        success: false,
-        message: "Invalid wallet address"
+      // Pinata upload api
+      const pinataFormData = new FormData();
+      pinataFormData.append('file', req.file.buffer, {
+          filename: req.file.originalname,
+          contentType: req.file.mimetype,
       });
-    }
 
-    // Find user by wallet address
-    const user = await prisma.user.findUnique({
-      where: { walletAddress }
-    });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found"
-      });
-    }
-
-    // Debug: Log user found
-    console.log('Found user:', user);
-
-    // Get created artworks
-    const createdArtworks = await prisma.artwork.findMany({
-      where: {
-        ownerId: user.id
-      },
-      include: {
-        owner: {
-          select: {
-            username: true,
-            walletAddress: true
-          }
-        },
-        approval: {
-          select: {
-            status: true,
-            createdAt: true,
-            reason: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    // Debug: Log created artworks
-    console.log('Found created artworks:', createdArtworks.length);
-
-    // Get purchased artworks through Sales table
-    const purchasedArtworks = await prisma.sale.findMany({
-      where: {
-        buyerAddress: walletAddress,
-      },
-      select: {
-        artwork: {
-          include: {
-            owner: {
-              select: {
-                username: true,
-                walletAddress: true
+      const pinataRes = await axios.post(
+          'https://api.pinata.cloud/pinning/pinFileToIPFS',
+          pinataFormData,
+          {
+              maxBodyLength: Infinity,
+              headers: {
+                  ...pinataFormData.getHeaders(),
+                  'pinata_api_key': process.env.PINATA_API_KEY,
+                  'pinata_secret_api_key': process.env.PINATA_API_SECRET,
               }
-            }
           }
-        },
-        price: true,
-        transactionHash: true,
-        soldAt: true
-      }
-    });
+      );
 
-    // Debug: Log purchased artworks
-    console.log('Found purchased artworks:', purchasedArtworks.length);
-    console.log('Purchase details:', purchasedArtworks);
+      // Saving to database
+      const artwork = await prisma.artwork.create({
+          data: {
+              contractId: parseInt(contractId),
+              title,
+              description,
+              imageCID: pinataRes.data.IpfsHash,
+              price: parseFloat(price),
+              isApproved: false,
+              isMinted: false,
+              isSold: false,
+              pendingApproval: false,
+              transactionHash: req.body.transactionHash,
+              owner: { connect: { id: req.user.id } }
+          }
+      });
 
-    // Format the artworks for response
-    const formattedCreated = createdArtworks.map(artwork => ({
-      dbId: artwork.dbId,
-      contractId: artwork.contractId,
-      title: artwork.title,
-      description: artwork.description,
-      imageCID: artwork.imageCID,
-      price: artwork.price.toString(),
-      isApproved: artwork.isApproved,
-      isMinted: artwork.isMinted,
-      isSold: artwork.isSold,
-      pendingApproval: artwork.pendingApproval,
-      transactionHash: artwork.transactionHash,
-      mintTransactionHash: artwork.mintTransactionHash,
-      createdAt: artwork.createdAt,
-      artist: artwork.owner.username || artwork.owner.walletAddress.slice(0, 6),
-      artistWallet: artwork.owner.walletAddress,
-      approvalStatus: artwork.approval?.status || null,
-      approvalDate: artwork.approval?.createdAt || null
-    }));
-
-    // Format purchased artworks
-    const formattedPurchased = purchasedArtworks.map(purchase => {
-      const artwork = purchase.artwork;
-      return {
-        dbId: artwork.dbId,
-        contractId: artwork.contractId,
-        title: artwork.title,
-        description: artwork.description,
-        imageCID: artwork.imageCID,
-        price: purchase.price.toString(),
-        isApproved: artwork.isApproved,
-        isMinted: artwork.isMinted,
-        isSold: artwork.isSold,
-        transactionHash: purchase.transactionHash,
-        purchasedAt: purchase.soldAt,
-        artist: artwork.owner.username || artwork.owner.walletAddress.slice(0, 6),
-        artistWallet: artwork.owner.walletAddress
-      };
-    });
-
-    // Debug: Log formatted response
-    console.log('Sending response with:', {
-      created: formattedCreated.length,
-      purchased: formattedPurchased.length
-    });
-
-    // Send response
-    res.status(200).json({
-      success: true,
-      artworks: {
-        created: formattedCreated,
-        purchased: formattedPurchased
-      },
-      message: "Artworks fetched successfully"
-    });
+      res.status(200).json({
+          success: true,
+          artwork,
+          ipfsHash: pinataRes.data.IpfsHash,
+          message: "Artwork uploaded successfully and posted in the gallery"
+      });
 
   } catch (error) {
-    console.error('Error fetching artworks:', error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch artworks",
-      error: error.message
-    });
+      console.error('Error handling upload:', error);
+      res.status(500).json({
+          success: false,
+          message: "Failed to process upload",
+          error: error.message
+      });
   }
 });
-router.post('/update-hash', async (req, res) => {
+
+
+//fetching of wallet address
+protectedRouter.get('/fetch/:walletAddress', async (req, res) => {
   try {
-    const { artworkId, transactionHash } = req.body;
+      const { walletAddress } = req.params;
 
-    const artwork = await prisma.artwork.update({
-      where: { dbId: parseInt(artworkId) },
-      data: { transactionHash }
-    });
+   
+      if (walletAddress.toLowerCase() !== req.user.walletAddress.toLowerCase()) {
+          return res.status(403).json({
+              success: false,
+              message: "You can only view your own artworks"
+          });
+      }
 
-    res.json({
-      success: true,
-      artwork,
-      message: "Transaction hash updated successfully"
-    });
+      // Find user by wallet address
+      const user = await prisma.user.findUnique({
+          where: { walletAddress }
+      });
+
+      if (!user) {
+          return res.status(404).json({
+              success: false,
+              message: "User not found"
+          });
+      }
+
+      // Debug: Log user found
+      console.log('Found user:', user);
+
+      // Get created artworks
+      const createdArtworks = await prisma.artwork.findMany({
+          where: {
+              ownerId: user.id
+          },
+          include: {
+              owner: {
+                  select: {
+                      username: true,
+                      walletAddress: true
+                  }
+              },
+              approval: {
+                  select: {
+                      status: true,
+                      createdAt: true,
+                      reason: true
+                  }
+              }
+          },
+          orderBy: {
+              createdAt: 'desc'
+          }
+      });
+
+      // Debug: Log created artworks
+      console.log('Found created artworks:', createdArtworks.length);
+
+      // Get purchased artworks through Sales table
+      const purchasedArtworks = await prisma.sale.findMany({
+          where: {
+              buyerAddress: walletAddress,
+          },
+          select: {
+              artwork: {
+                  include: {
+                      owner: {
+                          select: {
+                              username: true,
+                              walletAddress: true
+                          }
+                      }
+                  }
+              },
+              price: true,
+              transactionHash: true,
+              soldAt: true
+          }
+      });
+
+      // Format the artworks for response
+      const formattedCreated = createdArtworks.map(artwork => ({
+          dbId: artwork.dbId,
+          contractId: artwork.contractId,
+          title: artwork.title,
+          description: artwork.description,
+          imageCID: artwork.imageCID,
+          price: artwork.price.toString(),
+          isApproved: artwork.isApproved,
+          isMinted: artwork.isMinted,
+          isSold: artwork.isSold,
+          pendingApproval: artwork.pendingApproval,
+          transactionHash: artwork.transactionHash,
+          mintTransactionHash: artwork.mintTransactionHash,
+          createdAt: artwork.createdAt,
+          artist: artwork.owner.username || artwork.owner.walletAddress.slice(0, 6),
+          artistWallet: artwork.owner.walletAddress,
+          approvalStatus: artwork.approval?.status || null,
+          approvalDate: artwork.approval?.createdAt || null,
+          status:artwork.status
+      }));
+
+      // Format purchased artworks
+      const formattedPurchased = purchasedArtworks.map(purchase => {
+          const artwork = purchase.artwork;
+          return {
+              dbId: artwork.dbId,
+              contractId: artwork.contractId,
+              title: artwork.title,
+              description: artwork.description,
+              imageCID: artwork.imageCID,
+              price: purchase.price.toString(),
+              isApproved: artwork.isApproved,
+              isMinted: artwork.isMinted,
+              isSold: artwork.isSold,
+              transactionHash: purchase.transactionHash,
+              purchasedAt: purchase.soldAt,
+              artist: artwork.owner.username || artwork.owner.walletAddress.slice(0, 6),
+              artistWallet: artwork.owner.walletAddress
+          };
+      });
+
+      res.status(200).json({
+          success: true,
+          artworks: {
+              created: formattedCreated,
+              purchased: formattedPurchased
+          },
+          message: "Artworks fetched successfully"
+      });
 
   } catch (error) {
-    console.error('Error updating hash:', error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to update transaction hash",
-      error: error.message
-    });
+      console.error('Error fetching artworks:', error);
+      res.status(500).json({
+          success: false,
+          message: "Failed to fetch artworks",
+          error: error.message
+      });
   }
 });
 
-router.put('/approval/:artworkId', async (req, res) => {
+protectedRouter.post('/update-hash', 
+  authMiddleware(), 
+  async (req, res) => {
+  try {
+      const { artworkId, transactionHash } = req.body;
+
+      // Verify ownership
+      const artwork = await prisma.artwork.findUnique({
+          where: { dbId: parseInt(artworkId) },
+          include: { owner: true }
+      });
+
+      if (artwork.owner.walletAddress.toLowerCase() !== req.user.walletAddress.toLowerCase()) {
+          return res.status(403).json({
+              success: false,
+              message: "You can only update your own artworks"
+          });
+      }
+
+      const updatedArtwork = await prisma.artwork.update({
+          where: { dbId: parseInt(artworkId) },
+          data: { transactionHash }
+      });
+
+      res.json({
+          success: true,
+          artwork: updatedArtwork,
+          message: "Transaction hash updated successfully"
+      });
+
+  } catch (error) {
+      console.error('Error updating hash:', error);
+      res.status(500).json({
+          success: false,
+          message: "Failed to update transaction hash",
+          error: error.message
+      });
+  }
+});
+
+protectedRouter.put('/approval/:artworkId', async (req, res) => {
   try {
     const artworkId = parseInt(req.params.artworkId);
     const { walletAddress } = req.body;
@@ -399,7 +398,7 @@ router.put('/approval/:artworkId', async (req, res) => {
   }
 });
 
-router.get('/marketplace', async (req, res) => {
+publicRouter.get('/marketplace', async (req, res) => {
   try {
     const listings = await prisma.marketplace.findMany({
       where: {
@@ -445,7 +444,8 @@ router.get('/marketplace', async (req, res) => {
           imageCID: listing.artwork.imageCID,
           artist: listing.artwork.owner.username || 'Unknown',
           artistWallet: listing.artwork.owner.walletAddress,
-          lastSalePrice: listing.artwork.Sale[0]?.price.toString() || null
+          lastSalePrice: listing.artwork.Sale[0]?.price.toString() || null,
+          status:listing.status
         }
       }))
     });
@@ -460,7 +460,7 @@ router.get('/marketplace', async (req, res) => {
   }
 });
 
-router.post('/marketplace/buy/:marketplaceId', async (req, res) => {
+protectedRouter.post('/marketplace/buy/:marketplaceId',  async (req, res) => {
   try {
     const { marketplaceId } = req.params;
     const { walletAddress, transactionHash } = req.body;
@@ -592,7 +592,7 @@ router.post('/marketplace/buy/:marketplaceId', async (req, res) => {
 });
 
 
-router.delete('/marketplace/cancel/:marketplaceId', async (req, res) => {
+protectedRouter.delete('/marketplace/cancel/:marketplaceId', authMiddleware(), async (req, res) => {
   try {
     const { marketplaceId } = req.params;
     const { walletAddress } = req.body;
@@ -672,7 +672,7 @@ router.delete('/marketplace/cancel/:marketplaceId', async (req, res) => {
   }
 });
 
-router.post('/marketplace/relist/:artworkId', async (req, res) => {
+protectedRouter.post('/marketplace/relist/:artworkId', authMiddleware(), async (req, res) => {
   try {
     const { artworkId } = req.params;
     const { walletAddress, price } = req.body;
@@ -774,4 +774,4 @@ router.post('/marketplace/relist/:artworkId', async (req, res) => {
   }
 });
 
-export default router;
+export { publicRouter, protectedRouter };

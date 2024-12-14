@@ -4,6 +4,24 @@ import { useNavigate } from "react-router-dom"; // Add this import
 import {ethers} from 'ethers';
 import { BACKEND } from '../constant';
 
+const api = axios.create({
+  baseURL: BACKEND,
+  headers: {
+      'Content-Type': 'application/json'
+  }
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+
 
 function CreateNFT() {
   
@@ -967,6 +985,7 @@ function CreateNFT() {
   
       // Create FormData for artwork submission
       const formData = new FormData();
+      const token = localStorage.getItem('token');
       formData.append("file", image);
       formData.append("title", title);
       formData.append("description", description);
@@ -981,6 +1000,7 @@ function CreateNFT() {
         {
           headers: {
             "Content-Type": "multipart/form-data",
+             'Authorization': `Bearer ${token}`
           },
         }
       );
@@ -1000,7 +1020,12 @@ function CreateNFT() {
       await axios.post(`${BACKEND}/api/arts/update-hash`, {
         artworkId: uploadResponse.data.artwork.dbId,
         transactionHash: receipt.transactionHash
-      });
+      },
+    {
+      headers: {
+         'Authorization': `Bearer ${token}`
+      }
+    });
   
       console.log(uploadResponse.data);
       alert("Artwork created successfully!");

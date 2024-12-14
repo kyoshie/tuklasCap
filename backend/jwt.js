@@ -1,22 +1,24 @@
-import jwt from "jsonwebtoken";
+import jwt from 'jsonwebtoken';
+import { ethers } from 'ethers';
 
 export const generateToken = (user) => {
-    const token = jwt.sign(
-        { userId: user.id, role: user.role },
-        process.env.JWT_SECRET,
+    return jwt.sign(
         {
-            expiresIn: "1h",
-        }
+            id: user.id,
+            walletAddress: user.walletAddress,
+            role: user.role
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
     );
-
-    return token;
 };
 
-export const verifyToken = (token) => {
+export const verifySignature = (message, signature, walletAddress) => {
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        return decoded;
+        const recoveredAddress = ethers.utils.verifyMessage(message, signature);
+        return recoveredAddress.toLowerCase() === walletAddress.toLowerCase();
     } catch (error) {
-        return {};
+        console.error('Signature verification failed:', error);
+        return false;
     }
 };

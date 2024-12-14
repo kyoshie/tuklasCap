@@ -3,6 +3,24 @@ import axios from 'axios';
 import { BACKEND } from '../../constant';
 import { useNavigate } from 'react-router-dom';
 
+const api = axios.create({
+  baseURL: BACKEND,
+  headers: {
+      'Content-Type': 'application/json'
+  }
+});
+
+// Add request interceptor
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
 
 const GalleryCards = () => {
   const navigate = useNavigate();
@@ -12,28 +30,45 @@ const GalleryCards = () => {
   const [activeTab, setActiveTab] = useState('created');
   const [relistingId, setRelistingId] = useState(null);
 
-
   const fetchGalleryData = async () => {
     try {
-      const walletAddress = localStorage.getItem('walletAddress');
-      
-      if (!walletAddress) {
-        setError('Please connect your wallet');
-        return;
-      }
-      
-      const response = await axios.get(`${BACKEND}/api/arts/fetch/${walletAddress}`);
+        const walletAddress = localStorage.getItem('walletAddress');
+        const token = localStorage.getItem('token'); 
+        
+        if (!walletAddress || !token) {
+            setError('Please connect your wallet');
+            return;
+        }
+        
+        const response = await axios.get(`${BACKEND}/api/arts/fetch/${walletAddress}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
 
-      if (response.data.success) {
-        setGalleryData(response.data.artworks);
-      } else {
-        setError(response.data.message || 'Failed to fetch artworks');
-      }
+        console.log('Fetch response:', response.data);
+
+        if (response.data.success) {
+            // Transform the data to ensure marketplace status is properly set
+            const transformedArtworks = {
+                ...response.data.artworks,
+                created: response.data.artworks.created.map(artwork => ({
+                    ...artwork,
+                    isListed: Boolean(artwork)
+                }))
+            };
+            setGalleryData(transformedArtworks);
+        } else {
+            setError(response.data.message || 'Failed to fetch artworks');
+        }
     } catch (error) {
-      console.error('Error details:', error);
-      setError(error.response?.data?.message || 'Failed to load gallery data');
+        console.error('Error details:', error);
+        if (error.response?.status === 403) {
+            navigate('/');
+        }
+        setError(error.response?.data?.message || 'Failed to load gallery data');
     }
-  };
+};
 
   useEffect(() => {
     fetchGalleryData();
@@ -58,14 +93,21 @@ const GalleryCards = () => {
     try {
       setProcessingId(dbId);
       const walletAddress = localStorage.getItem('walletAddress');
+      const token = localStorage.getItem('token'); 
   
       if (!walletAddress) {
         throw new Error('Please connect your wallet first');
       }
   
-      const response = await axios.put(`${BACKEND}/api/arts/approval/${dbId}`, {
-        walletAddress
-      });
+      const response = await axios.put(`${BACKEND}/api/arts/approval/${dbId}`, 
+        {walletAddress},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+        }
+        }
+
+      );
 
       if (response.data.success) {
         alert('Artwork submitted for approval successfully!');
@@ -145,44 +187,63 @@ const GalleryCards = () => {
 
   const handleRelist = async (artwork) => {
     try {
-      setRelistingId(artwork.dbId);
-      const walletAddress = localStorage.getItem('walletAddress');
+        const token = localStorage.getItem('token');
+        setRelistingId(artwork.dbId);
+        const walletAddress = localStorage.getItem('walletAddress');
 
-      if (!walletAddress) {
-        throw new Error('Please connect your wallet first');
-      }
-
-      const response = await axios.post(
-        `${BACKEND}/api/arts/marketplace/relist/${artwork.dbId}`,
-        {
-          walletAddress,
-          price: artwork.price
+        if (!walletAddress) {
+            throw new Error('Please connect your wallet first');
         }
-      );
 
-      if (response.data.success) {
-        alert('Artwork relisted successfully!');
-        // Update local state before navigating
-        setGalleryData(prevData => ({
-          ...prevData,
-          created: prevData.created.map(card =>
-            card.dbId === artwork.dbId
-              ? {
-                  ...card,
-                  marketplace: response.data.listing
+        const response = await axios.post(
+            `${BACKEND}/api/arts/marketplace/relist/${artwork.dbId}`,
+            {
+                walletAddress,
+                price: artwork.price
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
-              : card
-          )
-        }));
-        navigate('/marketplace');
-      }
+            }
+        );
+
+        console.log('Relist response:', response.data);
+
+        if (response.data.success) {
+            // Update the state immediately with the new marketplace status
+            setGalleryData(prevData => ({
+                ...prevData,
+                created: prevData.created.map(card =>
+                    card.dbId === artwork.dbId
+                        ? {
+                            ...card,
+                            isListed: true,
+                            marketplace: {
+                                id: response.data.listing.id,
+                                status: 'LISTED'
+                            }
+                        }
+                        : card
+                )
+            }));
+
+            alert('Artwork relisted successfully!');
+
+            // Fetch fresh data
+            await fetchGalleryData();
+
+            // Navigate after everything is updated
+            navigate('/marketplace');
+        }
     } catch (error) {
-      console.error('Error relisting artwork:', error);
-      alert(error.response?.data?.message || 'Failed to relist artwork');
+        console.error('Error relisting artwork:', error);
+        alert(error.response?.data?.message || 'Failed to relist artwork');
     } finally {
-      setRelistingId(null);
+        setRelistingId(null);
     }
-  };
+};
+
   
   const getSellButton = (item) => {
     if (item.isSold) return (
@@ -197,10 +258,22 @@ const GalleryCards = () => {
     if (item.approvalStatus === 'rejected') return null;
   
     // Show Relist button if artwork is minted, approved, and not in marketplace
-    if (item.isMinted && item.isApproved && !item.marketplace) {
+    if (item.isMinted && item.isApproved) {
+      if (item.isListed && item.marketplace) {
+          return (
+              <button 
+                  className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
+                  disabled
+              >
+                  Minted
+              </button>
+          );
+      }
+      
+      // If item is not in marketplace (can be relisted)
       return (
         <button 
-          className={`bg-[--orange] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--orange-hover] transition-all p-2 font-customFont
+          className={`bg-[--orange] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--orange-hover] transition-all p-2 font-customFont 
             ${relistingId === item.dbId ? 'opacity-50 cursor-not-allowed' : ''}`}
           onClick={() => handleRelist(item)}
           disabled={relistingId === item.dbId}
