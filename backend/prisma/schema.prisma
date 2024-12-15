@@ -13,8 +13,8 @@ datasource db {
 model User {
   id            Int      @id @default(autoincrement())
   walletAddress String   @unique
-  username      String?
-  bio           String?
+  username      String?  @db.VarChar(15)
+  bio           String?  @db.VarChar(128)
   role          String   @default("USER")
   profilePic    Bytes?
   createdAt     DateTime @default(now())
@@ -26,8 +26,8 @@ model User {
 model Artwork {
   dbId        Int     @id @default(autoincrement())
   contractId  Int     @unique
-  title       String
-  description String
+  title       String  @db.VarChar(128)
+  description String  @db.VarChar(128)
   imageCID    String
   price       Decimal @default(0.000) @db.Decimal(28, 18)
 

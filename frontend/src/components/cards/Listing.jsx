@@ -951,12 +951,12 @@ const Marketplace = () => {
         return;
       }
 
-      // Show confirmation dialog
+      
       if (!window.confirm('Are you sure you want to cancel this listing?')) {
         return;
       }
 
-      // Call backend to cancel the listing
+      // for cancelling the listing in the marketplace
       const response = await axios.delete(
         `${BACKEND}/api/arts/marketplace/cancel/${marketplaceId}`,
         {
@@ -971,7 +971,7 @@ const Marketplace = () => {
         alert('Listing cancelled successfully!');
         // Remove the cancelled item from marketplace items
         setMarketplaceItems(prev => prev.filter(item => item.id !== marketplaceId));
-        // Navigate to gallery to show the artwork in created items
+       
         navigate('/gallery');
       } else {
         throw new Error(response.data.message || 'Failed to cancel listing');

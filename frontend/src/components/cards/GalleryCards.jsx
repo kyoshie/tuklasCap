@@ -3,6 +3,7 @@ import axios from 'axios';
 import { BACKEND } from '../../constant';
 import { useNavigate } from 'react-router-dom';
 
+
 const api = axios.create({
   baseURL: BACKEND,
   headers: {
@@ -10,7 +11,7 @@ const api = axios.create({
   }
 });
 
-// Add request interceptor
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {

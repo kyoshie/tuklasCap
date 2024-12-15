@@ -887,7 +887,7 @@ function CreateNFT() {
     }
   ]
       
-  const navigate = useNavigate(); // Add navigation hook
+  const navigate = useNavigate(); 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -942,13 +942,14 @@ function CreateNFT() {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      // 10MB limit file or image
+      if (file.size > 10 * 1024 * 1024) { 
         setError("File size must be less than 10MB");
         return;
       }
       setImage(file);
       setImageName(file.name);
-      setError(""); // Clear any previous errors
+      setError(""); 
     }
   };
 

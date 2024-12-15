@@ -9,206 +9,233 @@ dotenv.config();
 const prisma = new PrismaClient();
 const protectedRouter = express.Router();
 
-// Provider setup
+
 const provider = new ethers.providers.JsonRpcProvider(process.env.ARBITRUM_SEPOLIA_URL);
 const contractAddress = process.env.CONTRACT_ADDRESS;
 
-// Get all pending artworks for admin review
+// api for getting the pending artworks to be reviewed by the admin
 protectedRouter.get('/artworks', authMiddleware(['ADMIN']), async (req, res) => {
   try {
-    const pendingArtworks = await prisma.artwork.findMany({
-      where: { 
-        pendingApproval: true,
-        isApproved: false
-      },
-      include: {
-        owner: {
+      const pendingArtworks = await prisma.artwork.findMany({
+          where: {
+              pendingApproval: true,
+              isApproved: false
+          },
           select: {
-            username: true,
-            walletAddress: true
+              dbId: true,
+              contractId: true,
+              title: true,
+              description: true,
+              imageCID: true,
+              price: true,
+              owner: {
+                  select: {
+                      username: true
+                  }
+              },
+              pendingApproval: true,
+              isApproved: true,
+              isMinted: true,
+              createdAt: true
+          },
+          orderBy: {
+              createdAt: 'desc'
           }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
+      });
 
-    res.json({
-      success: true,
-      artworks: pendingArtworks.map(artwork => ({
-        dbId: artwork.dbId,
-        contractId: artwork.contractId,
-        title: artwork.title,
-        description: artwork.description,
-        imageCID: artwork.imageCID,
-        price: artwork.price.toString(),
-        artist: artwork.owner.username || 'Anonymous',
-        pendingApproval: artwork.pendingApproval,
-        isApproved: artwork.isApproved,
-        isMinted: artwork.isMinted,
-        createdAt: artwork.createdAt
-      }))
-    });
+      res.json({
+          success: true,
+          artworks: pendingArtworks
+      });
+
   } catch (error) {
-    console.error('Error fetching pending artworks:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch pending artworks'
-    });
+      res.status(500).json({
+          success: false,
+          message: 'Failed to fetch pending artworks'
+      });
   }
 });
 
-// Handle artwork approval/rejection
-protectedRouter.patch('/approve/:dbId', authMiddleware(['ADMIN']),  async (req, res) => {
+// api for approval
+protectedRouter.patch('/approve/:dbId', authMiddleware(['ADMIN']), async (req, res) => {
   try {
-    const { dbId } = req.params;
-    const { approved, adminId, reason } = req.body;
+
+    const dbId = req.params.dbId;
+
+    const approved = req.body.approved;
+    const adminId = req.body.adminId;
+    const reason = req.body.reason;
+
     const artworkDbId = parseInt(dbId);
 
-    // Find the artwork
-    const artwork = await prisma.artwork.findUnique({
-      where: { dbId: artworkDbId },
-      include: {
-        approval: true,
-        owner: {
-          select: {
-            username: true,
-            walletAddress: true
+      const artwork = await prisma.artwork.findUnique({
+          where: { dbId: artworkDbId },
+          include: {
+              approval: true,
+              owner: {
+                  select: {
+                      username: true,
+                      walletAddress: true
+                  }
+              }
           }
-        }
+      });
+
+      if (!artwork) {
+          return res.status(404).json({
+              success: false,
+              message: 'Artwork not found'
+          });
       }
-    });
 
-    if (!artwork) {
-      return res.status(404).json({
-        success: false,
-        message: 'Artwork not found'
-      });
-    }
-
-    // Start approval transaction
-    const updatedArtwork = await prisma.$transaction(async (prisma) => {
-      // Update artwork status
-      const updatedArtwork = await prisma.artwork.update({
-        where: { dbId: artworkDbId },
-        data: {
-          isApproved: approved,
-          pendingApproval: false,
-          approvedAt: approved ? new Date() : null,
-          isRejected: !approved, // Set isRejected to true if not approved
-          rejectedAt: !approved ? new Date() : null // Add rejection timestamp
-        }
-      });
-
-      // Create/update approval record
-      if (artwork.approval) {
-        await prisma.approval.update({
-          where: { artworkId: artworkDbId },
-          data: {
-            status: approved ? 'approved' : 'rejected',
-            reason,
-            approvedAt: approved ? new Date() : null,
-            rejectedAt: !approved ? new Date() : null // Add rejection timestamp
+      const updatedArtwork = await prisma.$transaction(async (prisma) => {
+          let approvedAt = null;
+          let rejectedAt = null;
+          
+          if (approved) {
+              approvedAt = new Date();
+          } else {
+              rejectedAt = new Date();
           }
-        });
+
+          const updatedArtwork = await prisma.artwork.update({
+              where: { dbId: artworkDbId },
+              data: {
+                  isApproved: approved,
+                  pendingApproval: false,
+                  approvedAt: approvedAt,
+                  isRejected: !approved,
+                  rejectedAt: rejectedAt
+              }
+          });
+
+          if (artwork.approval) {
+              let status = '';
+              if (approved) {
+                  status = 'approved';
+              } else {
+                  status = 'rejected';
+              }
+
+              await prisma.approval.update({
+                  where: { artworkId: artworkDbId },
+                  data: {
+                      status: status,
+                      reason: reason,
+                      approvedAt: approvedAt,
+                      rejectedAt: rejectedAt
+                  }
+              });
+          } else {
+              let status = '';
+              if (approved) {
+                  status = 'approved';
+              } else {
+                  status = 'rejected';
+              }
+
+              await prisma.approval.create({
+                  data: {
+                      artworkId: artworkDbId,
+                      adminId: adminId,
+                      status: status,
+                      reason: reason,
+                      approvedAt: approvedAt,
+                      rejectedAt: rejectedAt
+                  }
+              });
+          }
+
+          return updatedArtwork;
+      });
+
+      if (approved) {
+          try {
+              const wallet = new ethers.Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
+              const contract = new ethers.Contract(contractAddress, TuklasArtMarketplaceABI.abi, wallet);
+
+              let gasPrice = await provider.getGasPrice();
+              if (gasPrice) {
+                  gasPrice = gasPrice.mul(12).div(10);
+              }
+
+              const mintTx = await contract.approveAndMintArt(
+                  artwork.contractId,
+                  {
+                      gasLimit: 500000,
+                      gasPrice: gasPrice
+                  }
+              );
+
+              const receipt = await mintTx.wait();
+              console.log('Minting successful:', receipt.transactionHash);
+
+              const tokenId = artwork.contractId;
+
+              await prisma.$transaction(async (prisma) => {
+                  await prisma.artwork.update({
+                      where: { dbId: artworkDbId },
+                      data: {
+                          isMinted: true,
+                          mintTransactionHash: receipt.transactionHash,
+                          mintedAt: new Date(),
+                          listedAt: new Date(),
+                          isRejected: false
+                      }
+                  });
+
+                  await prisma.marketplace.create({
+                      data: {
+                          artworkId: artworkDbId,
+                          tokenId: tokenId,
+                          price: artwork.price,
+                          status: "LISTED"
+                      }
+                  });
+              });
+
+              console.log('Created marketplace listing with tokenId:', tokenId);
+
+          } catch (mintError) {
+              console.error('Minting or marketplace error:', mintError);
+              return res.status(500).json({
+                  success: false,
+                  message: 'Artwork approved but minting/listing failed: ' + mintError.message
+              });
+          }
+      }
+
+      let responseMessage = '';
+      if (approved) {
+          responseMessage = 'Artwork approved, minted, and listed in marketplace';
       } else {
-        await prisma.approval.create({
-          data: {
-            artworkId: artworkDbId,
-            adminId: adminId,
-            status: approved ? 'approved' : 'rejected',
-            reason,
-            approvedAt: approved ? new Date() : null,
-            rejectedAt: !approved ? new Date() : null // Add rejection timestamp
+          if (reason) {
+              responseMessage = 'Artwork rejected. Reason: ' + reason;
+          } else {
+              responseMessage = 'Artwork rejected. No reason provided';
           }
-        });
       }
 
-      return updatedArtwork;
-    });
-
-    // If approved, proceed with minting and marketplace listing
-    if (approved) {
-      try {
-        const wallet = new ethers.Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
-        const contract = new ethers.Contract(contractAddress, TuklasArtMarketplaceABI.abi, wallet);
-
-        console.log('Minting artwork:', {
-          dbId: artworkDbId,
-          contractId: artwork.contractId
-        });
-
-        // Mint the NFT
-        const mintTx = await contract.approveAndMintArt(
-          artwork.contractId,
-          {
-            gasLimit: 500000,
-            gasPrice: (await provider.getGasPrice()).mul(12).div(10)
-          }
-        );
-
-        const receipt = await mintTx.wait();
-        console.log('Minting successful:', receipt.transactionHash);
-
-        const tokenId = artwork.contractId;
-
-        // Start post-minting transaction
-        await prisma.$transaction(async (prisma) => {
-          // Update artwork with minting info
-          await prisma.artwork.update({
-            where: { dbId: artworkDbId },
-            data: {
-              isMinted: true,
-              mintTransactionHash: receipt.transactionHash,
-              mintedAt: new Date(),
-              listedAt: new Date(),
-              isRejected: false // Ensure rejected status is cleared if successfully minted
-            }
-          });
-
-          // Create marketplace listing with explicit tokenId
-          await prisma.marketplace.create({
-            data: {
-              artworkId: artworkDbId,
-              tokenId: tokenId,
-              price: artwork.price,
-              status: "LISTED"
-            }
-          });
-        });
-
-        console.log('Created marketplace listing with tokenId:', tokenId);
-
-      } catch (mintError) {
-        console.error('Minting or marketplace error:', mintError);
-        return res.status(500).json({
-          success: false,
-          message: 'Artwork approved but minting/listing failed: ' + mintError.message
-        });
+      let rejectionReason = null;
+      if (!approved) {
+          rejectionReason = reason;
       }
-    }
 
-    // Enhanced response with rejection details
-    res.json({
-      success: true,
-      message: approved 
-        ? 'Artwork approved, minted, and listed in marketplace' 
-        : `Artwork rejected. Reason: ${reason || 'No reason provided'}`,
-      artwork: {
-        ...updatedArtwork,
-        price: updatedArtwork.price.toString(),
-        rejectionReason: !approved ? reason : null
-      }
-    });
+      const responseData = {
+          success: true,
+          message: responseMessage,
+          artwork: updatedArtwork
+      };
+
+      res.json(responseData);
 
   } catch (error) {
-    console.error('Error in approval process:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+      console.error('Error in approval process:', error);
+      res.status(500).json({
+          success: false,
+          message: error.message
+      });
   }
 });
 
-export {protectedRouter};
+export { protectedRouter };

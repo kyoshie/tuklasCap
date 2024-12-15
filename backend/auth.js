@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 
-// auth.js
+// for authentication
 const authMiddleware = (roles = []) => {
     return async (req, res, next) => {
         console.log('Auth Debug:', {
@@ -15,18 +15,21 @@ const authMiddleware = (roles = []) => {
         });
 
         // Get token from the request headers
-        const token = req.headers['authorization']?.split(' ')[1];
+        let token;
+        if (req.headers['authorization']) {
+            token = req.headers['authorization'].split(' ')[1];
+        }
 
         if (!token) {
             return res.status(403).json({ error: 'Access denied. No token provided.' });
         }
 
         try {
-            // Verify token
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            console.log('Decoded token:', decoded); // Add this debug log
             
-            // Verify user exists in database
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            console.log('Decoded token:', decoded); 
+            
+            // verify if the user is in the database
             const user = await prisma.user.findUnique({
                 where: { walletAddress: decoded.walletAddress }
             });
@@ -35,12 +38,11 @@ const authMiddleware = (roles = []) => {
                 return res.status(401).json({ error: 'User not found.' });
             }
 
-            // Check if the user role is allowed (if roles are specified)
             if (roles.length && !roles.includes(user.role)) {
                 return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
             }
 
-            req.user = user; // Store full user object in request
+            req.user = user; 
             next();
         } catch (error) {
             console.error('Auth Error:', error);

@@ -21,9 +21,7 @@ const upload = multer({
 });
 
 
-protectedRouter.post('/upload', 
-  upload.single('file'), 
-  async (req, res) => {
+protectedRouter.post('/upload', upload.single('file'), async (req, res) => {
   try {
       if (!req.file) {
           return res.status(400).json({ success: false, message: "No file uploaded" });
@@ -52,7 +50,7 @@ protectedRouter.post('/upload',
           }
       );
 
-      // Saving to database
+      // save the artwork to database
       const artwork = await prisma.artwork.create({
           data: {
               contractId: parseInt(contractId),
@@ -87,7 +85,7 @@ protectedRouter.post('/upload',
 });
 
 
-//fetching of wallet address
+//api to fetch the user wallet address
 protectedRouter.get('/fetch/:walletAddress', async (req, res) => {
   try {
       const { walletAddress } = req.params;
@@ -226,9 +224,7 @@ protectedRouter.get('/fetch/:walletAddress', async (req, res) => {
   }
 });
 
-protectedRouter.post('/update-hash', 
-  authMiddleware(), 
-  async (req, res) => {
+protectedRouter.post('/update-hash', authMiddleware(), async (req, res) => {
   try {
       const { artworkId, transactionHash } = req.body;
 
@@ -357,17 +353,17 @@ protectedRouter.put('/approval/:artworkId', async (req, res) => {
         }
       }),
       
-      // Create approval record with proper connection
+      // Create approval record 
       prisma.approval.create({
         data: {
           artwork: {
             connect: {
-              dbId: artworkId // Connect to existing artwork
+              dbId: artworkId 
             }
           },
           admin: {
             connect: {
-              id: admin.id // Connect to admin user - make sure this ID exists
+              id: admin.id 
             }
           },
           status: 'pending'
@@ -612,7 +608,7 @@ protectedRouter.delete('/marketplace/cancel/:marketplaceId', authMiddleware(), a
       include: {
         artwork: {
           include: {
-            owner: true // Include owner to get walletAddress
+            owner: true 
           }
         }
       }
@@ -716,7 +712,7 @@ protectedRouter.post('/marketplace/relist/:artworkId', authMiddleware(), async (
       });
     }
 
-    // Check if the artwork can be relisted
+    // Check if the an artwork can be relisted
     if (!artwork.isMinted || !artwork.isApproved) {
       return res.status(400).json({
         success: false,
@@ -724,7 +720,7 @@ protectedRouter.post('/marketplace/relist/:artworkId', authMiddleware(), async (
       });
     }
 
-    // Check if already listed
+    // Check if artwork is already listed
     if (artwork.marketplace) {
       return res.status(400).json({
         success: false,
@@ -732,7 +728,6 @@ protectedRouter.post('/marketplace/relist/:artworkId', authMiddleware(), async (
       });
     }
 
-    // Use a transaction to ensure data consistency
     const result = await prisma.$transaction(async (prisma) => {
       // Create marketplace listing
       const listing = await prisma.marketplace.create({

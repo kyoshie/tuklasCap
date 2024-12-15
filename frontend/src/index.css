@@ -7,7 +7,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/*for calling custom colors */
+/*my custom colors */
 :root{
     --main-color: #fff;
     --orange: orange;
