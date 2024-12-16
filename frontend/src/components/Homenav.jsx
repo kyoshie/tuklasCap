@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AiOutlineClose, AiOutlineMenu } from 'react-icons/ai';
-import { useNavigate, Link } from 'react-router-dom'; // Add Link
+import { useNavigate, Link } from 'react-router-dom'; 
 import Profile from '../pages/Profile';
 import axios from 'axios';
 import { BACKEND } from '../constant';
@@ -19,9 +19,9 @@ const Homenav = () => {
         const address = localStorage.getItem('walletAddress');
         if (address) {
             setWalletAddress(address);
-            fetchUserData(address); // Pass address directly
+            fetchUserData(address);
         } else {
-            navigate('/'); // Redirect if no wallet address
+            navigate('/'); 
         }
     }, [navigate]);
 
@@ -56,7 +56,7 @@ const Homenav = () => {
     };
 
     const handleLogout = () => {
-        localStorage.clear(); // Clear all localStorage items
+        localStorage.clear(); 
         navigate('/');
     };
 
@@ -95,7 +95,7 @@ const Homenav = () => {
                 <button onClick={toggleDropdown} className="flex items-center w-10 h-10 space-x-2">
                     <img 
                         className="object-cover w-10 h-10 rounded-full md:rounded-full" 
-                        src={profilePicUrl || '/default-profile.png'} // Add a default profile image
+                        src={profilePicUrl || '/default-profile.png'} 
                         alt="User" 
                     />
                 </button>
