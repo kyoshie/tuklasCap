@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 const Admin = () => {
     const navigate = useNavigate();
 
-    // Check if admin is logged in on component mount
+    // Check if admin is log in 
     useEffect(() => {
         const walletAddress = localStorage.getItem('walletAddress');
         if (!walletAddress) {

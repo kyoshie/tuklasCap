@@ -22,9 +22,7 @@ const upload = multer({
 });
 
 // Protected route to update user profile
-router.post("/updateProfile", 
-    authMiddleware(), 
-    upload.single("profilePic"), 
+router.post("/updateProfile", authMiddleware(), upload.single("profilePic"), 
     async (req, res) => {
         try {
             const walletAddress = req.user.walletAddress;
@@ -80,7 +78,7 @@ router.post("/updateProfile",
     }
 );
 
-// Protected route to get user profile information
+// Protected route to get user profile info
 router.get("/getProfile/:walletAddress", authMiddleware(), async (req, res) => {
     try {
      

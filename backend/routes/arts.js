@@ -13,7 +13,7 @@ const prisma = new PrismaClient();
 const publicRouter = express.Router();
 const protectedRouter = express.Router();
 
-
+//file size limit
 const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024,

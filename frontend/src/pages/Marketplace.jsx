@@ -6,9 +6,9 @@ import Listing from "../components/cards/Listing";
 const Marketplace = () => {
 
     return (
-        <div className="bg-[#222831] h-[100vh] overflow-hidden md:overflow-hidden ">
+        <div className="bg-[--background] h-[100vh] overflow-hidden md:overflow-hidden ">
            <Listing/>
-        </div>
+        </div>  
     );
 };
 

@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import About from './pages/About';
 import Intro from './components/Intro';
 import Marketplace from './pages/Marketplace';
+import Guide from './pages/Guide';
 import Home from './pages/Home';
 import Homenav from './components/Homenav';
 import Gallery from './pages/Gallery';
@@ -26,6 +27,13 @@ export const router = createBrowserRouter([
         element: <>
             <Navbar />
             <About />
+        </>
+    },
+    {
+        path: "/guide",
+        element: <>
+            <Navbar />
+            <Guide />
         </>
     },
     {

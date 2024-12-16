@@ -88,7 +88,7 @@ const Intro = () => {
                 isAdmin: localStorage.getItem('isAdmin')
             });
     
-            // Add a small delay to ensure storage is complete
+        
             await new Promise(resolve => setTimeout(resolve, 100));
     
             // Redirect based on role
