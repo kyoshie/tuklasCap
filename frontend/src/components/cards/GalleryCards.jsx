@@ -48,13 +48,15 @@ const GalleryCards = () => {
         });
 
         console.log('Fetch response:', response.data);
+        
 
         if (response.data.success) {
             const transformedArtworks = {
                 ...response.data.artworks,
                 created: response.data.artworks.created.map(artwork => ({
                     ...artwork,
-                    isListed: Boolean(artwork)
+                    isListed: Boolean(artwork),
+                    rejectionReason: artwork.isRejected ? artwork.reason || 'No reason provided' : null,
                 }))
             };
             setGalleryData(transformedArtworks);
@@ -69,6 +71,7 @@ const GalleryCards = () => {
         setError(error.response?.data?.message || 'Failed to load gallery data');
     }
 };
+
 
   useEffect(() => {
     fetchGalleryData();
@@ -158,7 +161,8 @@ const GalleryCards = () => {
       </span>
     );
 
-    if (artwork.approvalStatus === 'rejected') {
+    if (artwork.approvalStatus === 'rejected' ) {
+      console.log('Artwork rejection reason:', artwork.rejectionReason);
       return (
         <div className="flex flex-col items-center gap-2">
           <span className="px-3 py-1.5 text-sm font-medium text-red-800 bg-red-200 rounded-full inline-flex items-center gap-1.5 shadow-sm">
@@ -167,13 +171,15 @@ const GalleryCards = () => {
             </svg>
             Rejected
           </span>
-          {artwork.reason && (
+          {artwork.rejectionReason && (
             <div className="px-4 py-2 mt-1 text-sm text-red-700 bg-red-100 border border-red-200 rounded-lg max-w-[250px]">
-              {artwork.reason}
+              {artwork.rejectionReason}
+          
             </div>
           )}
         </div>
       );
+      
     }
 
     if (artwork.pendingApproval) return (
@@ -256,6 +262,7 @@ const getSellButton = (item) => {
   );
 
   if (item.approvalStatus === 'rejected') return null;
+
 
   // Show Minted button if artwork is minted and listed
   if (item.isMinted && item.isApproved) {

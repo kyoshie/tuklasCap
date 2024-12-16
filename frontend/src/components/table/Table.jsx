@@ -3,31 +3,31 @@ import axios from 'axios';
 import Modal from '../Modal';
 import { BACKEND } from '../../constant';
 
-
 const api = axios.create({
     baseURL: BACKEND,
     headers: {
         'Content-Type': 'application/json'
     }
-  });
-  
-  // Add request interceptor
-  api.interceptors.request.use((config) => {
+});
+
+// Add request interceptor
+api.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
-  }, (error) => {
+}, (error) => {
     return Promise.reject(error);
-  });
-  
-  
+});
 
 const Table = () => {
     const [artworks, setArtworks] = useState([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+    const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
     const [selectedImageCID, setSelectedImageCID] = useState('');
+    const [selectedArtworkId, setSelectedArtworkId] = useState(null);
+    const [rejectionReason, setRejectionReason] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -35,7 +35,7 @@ const Table = () => {
         fetchPendingArtworks();
     }, []);
     
-    //for fetching artworks to admin
+    // Fetch pending artworks for admin
     const fetchPendingArtworks = async () => {
         try {
             const token = localStorage.getItem('token'); 
@@ -44,7 +44,7 @@ const Table = () => {
                     headers: {
                       'Authorization': `Bearer ${token}`
                   }
-                  }
+                }
             );
             console.log('Fetched artworks:', response.data);
             
@@ -61,8 +61,15 @@ const Table = () => {
         }
     };
 
-    //for approval
+    // Handle artwork approval or rejection
     const handleApproval = async (dbId, isApproved) => {
+        // If rejecting, open rejection reason modal
+        if (!isApproved) {
+            setSelectedArtworkId(dbId);
+            setIsRejectionModalOpen(true);
+            return;
+        }
+
         try {
             const token = localStorage.getItem('token'); 
             setLoading(true);
@@ -73,22 +80,22 @@ const Table = () => {
                 {
                     approved: isApproved,
                     adminId: adminId,
-                    reason: isApproved ? 'Artwork meets guidelines' : 'Artwork rejected'
+                    reason: 'Artwork meets guidelines'
                 },
                 {
                     headers: {
                       'Authorization': `Bearer ${token}`
                   }
-                  }
+                }
             );
 
             if (response.data.success) {
-                // Update local state to remove approved/rejected artwork
+                // Update local state to remove approved artwork
                 setArtworks(prevArtworks => 
                     prevArtworks.filter(art => art.dbId !== dbId)
                 );
                 // Show success message
-                alert(isApproved ? 'Artwork approved successfully!' : 'Artwork rejected');
+                alert('Artwork approved successfully!');
             }
         } catch (error) {
             console.error('Error updating approval:', error);
@@ -98,14 +105,67 @@ const Table = () => {
         }
     };
 
-    const openModal = (cid) => {
-        setSelectedImageCID(cid);
-        setIsModalOpen(true);
+    // Submit rejection with reason
+    const submitRejection = async () => {
+        if (!rejectionReason.trim()) {
+            alert('Please provide a reason for rejection');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token'); 
+            setLoading(true);
+            const adminId = 4; 
+            
+            const response = await axios.patch(
+                `${BACKEND}/api/admin/approve/${selectedArtworkId}`,
+                {
+                    approved: false,
+                    adminId: adminId,
+                    reason: rejectionReason
+                },
+                {
+                    headers: {
+                      'Authorization': `Bearer ${token}`
+                  }
+                }
+            );
+
+            if (response.data.success) {
+                // Update local state to remove rejected artwork
+                setArtworks(prevArtworks => 
+                    prevArtworks.filter(art => art.dbId !== selectedArtworkId)
+                );
+                // Close rejection modal and reset state
+                setIsRejectionModalOpen(false);
+                setSelectedArtworkId(null);
+                setRejectionReason('');
+                
+                // Show success message
+                alert('Artwork rejected successfully');
+            }
+        } catch (error) {
+            console.error('Error rejecting artwork:', error);
+            alert(error.response?.data?.message || 'Failed to reject artwork');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const closeModal = () => {
-        setIsModalOpen(false);
+    const openImageModal = (cid) => {
+        setSelectedImageCID(cid);
+        setIsImageModalOpen(true);
+    };
+
+    const closeImageModal = () => {
+        setIsImageModalOpen(false);
         setSelectedImageCID('');
+    };
+
+    const closeRejectionModal = () => {
+        setIsRejectionModalOpen(false);
+        setSelectedArtworkId(null);
+        setRejectionReason('');
     };
 
     if (loading) {
@@ -151,7 +211,7 @@ const Table = () => {
                                 <td className="p-3">{art.contractId}</td>
                                 <td className="p-3">
                                     <button
-                                        onClick={() => openModal(art.imageCID)}
+                                        onClick={() => openImageModal(art.imageCID)}
                                         className="text-blue-500 underline hover:text-blue-700"
                                     >
                                         View Image
@@ -185,8 +245,9 @@ const Table = () => {
                 </table>
             )}
 
-            {isModalOpen && (
-                <Modal onClose={closeModal}>
+            {/* Image Preview Modal */}
+            {isImageModalOpen && (
+                <Modal onClose={closeImageModal}>
                     <div className="p-4 bg-white rounded-lg shadow-lg">
                         <img 
                             src={`https://gateway.pinata.cloud/ipfs/${selectedImageCID}`}
@@ -197,6 +258,37 @@ const Table = () => {
                                 e.target.src = '/placeholder.png';
                             }}
                         />
+                    </div>
+                </Modal>
+            )}
+
+            {/* Rejection Reason Modal */}
+            {isRejectionModalOpen && (
+                <Modal onClose={closeRejectionModal}>
+                    <div className="p-6 bg-white rounded-lg shadow-lg w-96">
+                        <h2 className="mb-4 text-xl font-bold">Reject Artwork</h2>
+                        <p className="mb-4 text-gray-600">Please provide a reason for rejecting this artwork:</p>
+                        <textarea 
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            placeholder="Explain why this artwork is being rejected..."
+                            className="w-full h-32 p-2 mb-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <div className="flex justify-end space-x-2">
+                            <button 
+                                onClick={closeRejectionModal}
+                                className="px-4 py-2 text-gray-600 bg-gray-200 rounded hover:bg-gray-300"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={submitRejection}
+                                className="px-4 py-2 text-white bg-red-500 rounded hover:bg-red-600"
+                                disabled={loading}
+                            >
+                                Submit Rejection
+                            </button>
+                        </div>
                     </div>
                 </Modal>
             )}
