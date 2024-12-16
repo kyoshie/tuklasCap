@@ -50,7 +50,6 @@ const GalleryCards = () => {
         console.log('Fetch response:', response.data);
 
         if (response.data.success) {
-            // Transform the data to ensure marketplace status is properly set
             const transformedArtworks = {
                 ...response.data.artworks,
                 created: response.data.artworks.created.map(artwork => ({
@@ -75,7 +74,7 @@ const GalleryCards = () => {
     fetchGalleryData();
   }, []);
 
-  // Add an effect to refresh data when navigating back to gallery
+  // refresh data when navigating back to gallery
   useEffect(() => {
     const handleFocus = () => {
       fetchGalleryData();
@@ -246,91 +245,88 @@ const GalleryCards = () => {
 };
 
   
-  const getSellButton = (item) => {
-    if (item.isSold) return (
-      <button
-        className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
-        disabled
-      >
-        Sold
-      </button>
-    );
+const getSellButton = (item) => {
+  if (item.isSold) return (
+    <button
+      className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
+      disabled
+    >
+      Sold
+    </button>
+  );
 
-    if (item.approvalStatus === 'rejected') return null;
-  
-    // Show Relist button if artwork is minted, approved, and not in marketplace
-    if (item.isMinted && item.isApproved) {
-      if (item.isListed && item.marketplace) {
-          return (
-              <button 
-                  className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
-                  disabled
-              >
-                  Minted
-              </button>
-          );
-      }
-      
-      // If item is not in marketplace (can be relisted)
+  if (item.approvalStatus === 'rejected') return null;
+
+  // Show Minted button if artwork is minted and listed
+  if (item.isMinted && item.isApproved) {
+    if (item.isListed && item.marketplace) {
       return (
-        <button 
-          className={`bg-[--orange] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--orange-hover] transition-all p-2 font-customFont 
-            ${relistingId === item.dbId ? 'opacity-50 cursor-not-allowed' : ''}`}
-          onClick={() => handleRelist(item)}
-          disabled={relistingId === item.dbId}
-        >
-          {relistingId === item.dbId ? 'Relisting...' : 'Relist'}
-        </button>
-      );
-    }
-  
-    // If the artwork is listed in marketplace
-    if (item.marketplace) {
-      return (
-        <button 
-          className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
-          disabled
-        >
-          Listed
-        </button>
-      );
-    }
-  
-    // Show Minted button if the artwork is minted
-    if (item.isMinted) {
-      return (
-        <button 
-          className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
-          disabled
-        >
+        <button className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed" disabled>
           Minted
         </button>
       );
     }
     
-    if (item.pendingApproval) {
-      return (
-        <button 
-          className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
-          disabled
-        >
-          Pending
-        </button>
-      );
-    }
-  
-    // Default Sell button
+    // If item is not listed in the marketplace (can be relisted)
     return (
       <button 
-        className={`bg-[--blue] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--blue-hover] transition-all p-2 font-customFont
-          ${processingId === item.dbId ? 'opacity-50 cursor-not-allowed' : ''}`}
-        onClick={() => handleSell(item.dbId)}
-        disabled={processingId === item.dbId}
+        className={`bg-[--orange] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--orange-hover] transition-all p-2 font-customFont 
+          ${relistingId === item.dbId ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={() => handleRelist(item)}
+        disabled={relistingId === item.dbId}
       >
-        {processingId === item.dbId ? 'Processing...' : 'Sell'}
+        {relistingId === item.dbId ? 'Relisting...' : 'Relist'}
       </button>
     );
-  };
+  }
+
+  // If the artwork is listed in marketplace
+  if (item.marketplace) {
+    return (
+      <button 
+        className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
+        disabled
+      >
+        Listed
+      </button>
+    );
+  }
+
+  // Show Minted button if the artwork is minted
+  if (item.isMinted) {
+    return (
+      <button 
+        className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
+        disabled
+      >
+        Minted
+      </button>
+    );
+  }
+  
+  if (item.pendingApproval) {
+    return (
+      <button 
+        className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed"
+        disabled
+      >
+        Pending
+      </button>
+    );
+  }
+
+  // Default Sell button
+  return (
+    <button 
+      className={`bg-[--blue] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--blue-hover] transition-all p-2 font-customFont
+        ${processingId === item.dbId ? 'opacity-50 cursor-not-allowed' : ''}`}
+      onClick={() => handleSell(item.dbId)}
+      disabled={processingId === item.dbId}
+    >
+      {processingId === item.dbId ? 'Processing...' : 'Sell'}
+    </button>
+  );
+};
 
   
   const getBuyButton = (item) => {
