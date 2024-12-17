@@ -220,7 +220,7 @@ const Table = () => {
                                 </td>
                                 <td className="p-3">{art.title}</td>
                                 <td className="p-3">{art.description}</td>
-                                <td className="p-3">{art.artist?.username || 'Anonymous'}</td>
+                                <td className="p-3">{art.owner?.username || 'Anonymous'}</td>
                                 <td className="p-3 text-[--orange]">{Number(art.price).toFixed(3)}</td>
                                 <td className="p-3">
                                     <div className="flex items-center justify-center gap-2">
