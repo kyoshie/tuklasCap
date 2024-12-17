@@ -48,16 +48,17 @@ const GalleryCards = () => {
         });
 
         console.log('Fetch response:', response.data);
-        
 
         if (response.data.success) {
             const transformedArtworks = {
                 ...response.data.artworks,
-                created: response.data.artworks.created.map(artwork => ({
-                    ...artwork,
-                    isListed: Boolean(artwork),
-                    rejectionReason: artwork.isRejected ? artwork.reason || 'No reason provided' : null,
-                }))
+                created: response.data.artworks.created.map(artwork => {
+                  return {
+                      ...artwork,
+                      isListed: Boolean(artwork),
+                      rejectionReason: artwork.approval?.status === 'rejected' ? artwork.approval?.reason || 'No reason provided' : null,
+                  }
+                })
             };
             setGalleryData(transformedArtworks);
         } else {
@@ -109,7 +110,6 @@ const GalleryCards = () => {
             'Authorization': `Bearer ${token}`
         }
         }
-
       );
 
       if (response.data.success) {
@@ -161,8 +161,8 @@ const GalleryCards = () => {
       </span>
     );
 
-    if (artwork.approvalStatus === 'rejected' ) {
-      console.log('Artwork rejection reason:', artwork.rejectionReason);
+    if (artwork.approvalStatus === 'rejected') {
+      console.log(artwork.rejectionReason)
       return (
         <div className="flex flex-col items-center gap-2">
           <span className="px-3 py-1.5 text-sm font-medium text-red-800 bg-red-200 rounded-full inline-flex items-center gap-1.5 shadow-sm">
@@ -172,14 +172,13 @@ const GalleryCards = () => {
             Rejected
           </span>
           {artwork.rejectionReason && (
-            <div className="px-4 py-2 mt-1 text-sm text-red-700 bg-red-100 border border-red-200 rounded-lg max-w-[250px]">
-              {artwork.rejectionReason}
-          
+            <div className="px-4 py-2 mt-4 text-sm text-red-700 bg-red-100 border border-red-200 rounded-lg w-[120px]">
+              <p className='text-center'>Reason:</p> 
+              <p className='text-center'>{artwork.rejectionReason}</p>
             </div>
           )}
         </div>
       );
-      
     }
 
     if (artwork.pendingApproval) return (
@@ -266,25 +265,28 @@ const getSellButton = (item) => {
 
   // Show Minted button if artwork is minted and listed
   if (item.isMinted && item.isApproved) {
+    
     if (item.isListed && item.marketplace) {
       return (
         <button className="bg-gray-500 w-[120px] text-white justify-center rounded-md shadow-md text-center p-2 font-customFont opacity-50 cursor-not-allowed" disabled>
           Minted
         </button>
       );
+    } else {
+      return (
+        <button 
+          className={`bg-[--orange] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--orange-hover] transition-all p-2 font-customFont 
+            ${relistingId === item.dbId ? 'opacity-50 cursor-not-allowed' : ''}`}
+          onClick={() => handleRelist(item)}
+          disabled={relistingId === item.dbId}
+        >
+          {relistingId === item.dbId ? 'Relisting...' : 'Relist'}
+        </button>
+      );
     }
     
     // If item is not listed in the marketplace (can be relisted)
-    return (
-      <button 
-        className={`bg-[--orange] w-[120px] text-white justify-center rounded-md shadow-md text-center hover:bg-[--orange-hover] transition-all p-2 font-customFont 
-          ${relistingId === item.dbId ? 'opacity-50 cursor-not-allowed' : ''}`}
-        onClick={() => handleRelist(item)}
-        disabled={relistingId === item.dbId}
-      >
-        {relistingId === item.dbId ? 'Relisting...' : 'Relist'}
-      </button>
-    );
+    
   }
 
   // If the artwork is listed in marketplace

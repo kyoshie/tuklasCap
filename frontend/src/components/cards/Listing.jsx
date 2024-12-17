@@ -1130,11 +1130,6 @@ const Marketplace = () => {
                 </p>
                 <div className='mb-2 text-center text-white'>
                   <p className='text-sm'>Artist: {item.artwork.artist}</p>
-                  {item.artwork.lastSalePrice && (
-                    <p className='text-sm text-gray-400'>
-                      Last Sale: {Number(item.artwork.lastSalePrice).toFixed(3)} ETH
-                    </p>
-                  )}
                 </div>
                 <div className="flex flex-col items-center space-y-2">
                   {getStatusBadge(item.price)}
@@ -1154,7 +1149,7 @@ const Marketplace = () => {
                       onClick={() => handleBuy(item.tokenId, item.price, item.id)}
                       disabled={processingId === item.id}
                     >
-                      {processingId === item.id ? 'Processing...' : 'Buy Now'}
+                      {processingId === item.id ? 'Buying...' : 'Buy Now'}
                     </button>
                   )}
                 </div>

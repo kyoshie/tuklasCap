@@ -185,6 +185,7 @@ const Table = () => {
     }
 
     return (
+        
         <div className="w-full p-4 overflow-x-auto">
             {artworks.length === 0 ? (
                 <div className="flex items-center justify-center w-full p-8">
@@ -219,7 +220,7 @@ const Table = () => {
                                 </td>
                                 <td className="p-3">{art.title}</td>
                                 <td className="p-3">{art.description}</td>
-                                <td className="p-3">{art.artist || 'Anonymous'}</td>
+                                <td className="p-3">{art.owner?.username || 'Anonymous'}</td>
                                 <td className="p-3 text-[--orange]">{Number(art.price).toFixed(3)}</td>
                                 <td className="p-3">
                                     <div className="flex items-center justify-center gap-2">

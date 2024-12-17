@@ -131,7 +131,8 @@ protectedRouter.get('/fetch/:walletAddress', async (req, res) => {
                       createdAt: true,
                       reason: true
                   }
-              }
+              },
+              marketplace: true
           },
           orderBy: {
               createdAt: 'desc'
@@ -139,7 +140,7 @@ protectedRouter.get('/fetch/:walletAddress', async (req, res) => {
       });
 
       // Debug: Log created artworks
-      console.log('Found created artworks:', createdArtworks.length);
+      console.log('Found created artworks:', createdArtworks);
 
       // Get purchased artworks through Sales table
       const purchasedArtworks = await prisma.sale.findMany({
@@ -172,11 +173,13 @@ protectedRouter.get('/fetch/:walletAddress', async (req, res) => {
           imageCID: artwork.imageCID,
           price: artwork.price.toString(),
           isApproved: artwork.isApproved,
+          approval: artwork.approval,
           isMinted: artwork.isMinted,
           isSold: artwork.isSold,
           pendingApproval: artwork.pendingApproval,
           transactionHash: artwork.transactionHash,
           mintTransactionHash: artwork.mintTransactionHash,
+          marketplace: artwork.marketplace,
           createdAt: artwork.createdAt,
           artist: artwork.owner.username || artwork.owner.walletAddress.slice(0, 6),
           artistWallet: artwork.owner.walletAddress,

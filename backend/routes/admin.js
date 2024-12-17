@@ -16,45 +16,58 @@ const contractAddress = process.env.CONTRACT_ADDRESS;
 // api for getting the pending artworks to be reviewed by the admin
 protectedRouter.get('/artworks', authMiddleware(['ADMIN']), async (req, res) => {
   try {
-      const pendingArtworks = await prisma.artwork.findMany({
-          where: {
-              pendingApproval: true,
-              isApproved: false
-          },
+    const pendingArtworks = await prisma.artwork.findMany({
+      where: {
+        pendingApproval: true,
+        isApproved: false,
+      },
+      select: {
+        dbId: true,
+        contractId: true,
+        title: true,
+        description: true,
+        imageCID: true,
+        price: true,
+        owner: {
           select: {
-              dbId: true,
-              contractId: true,
-              title: true,
-              description: true,
-              imageCID: true,
-              price: true,
-              owner: {
-                  select: {
-                      username: true
-                  }
-              },
-              pendingApproval: true,
-              isApproved: true,
-              isMinted: true,
-              createdAt: true
+            username: true,
           },
-          orderBy: {
-              createdAt: 'desc'
-          }
-      });
+        },
+        pendingApproval: true,
+        isApproved: true,
+        isMinted: true,
+        createdAt: true,
+        approval: {
+          select: {
+            status: true,
+            reason: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
 
-      res.json({
-          success: true,
-          artworks: pendingArtworks
-      });
+    const transformedArtworks = pendingArtworks.map((artwork) => ({
+      ...artwork,
+      rejectionReason: artwork.approval?.status === 'rejected' ? artwork.approval?.reason || 'No reason provided' : null,
+    }));
 
+    res.json({
+      success: true,
+      artworks: transformedArtworks,
+    });
   } catch (error) {
-      res.status(500).json({
-          success: false,
-          message: 'Failed to fetch pending artworks'
-      });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pending artworks',
+    });
   }
 });
+
+
+
 
 // api for approval
 protectedRouter.patch('/approve/:dbId', authMiddleware(['ADMIN']), async (req, res) => {
@@ -131,6 +144,7 @@ protectedRouter.patch('/approve/:dbId', authMiddleware(['ADMIN']), async (req, r
               approvedAt: approvedAt,
               rejectedAt: rejectedAt
             }
+            
           });
         }
   
@@ -203,8 +217,10 @@ protectedRouter.patch('/approve/:dbId', authMiddleware(['ADMIN']), async (req, r
       const responseData = {
         success: true,
         message: responseMessage,
-        artwork: updatedArtwork,
-        rejectionReason:  !approved ? reason : null
+        artwork: { ...updatedArtwork,
+          rejectionReason:  !approved ? reason :null
+        } 
+       
       };
   
       res.json(responseData);
