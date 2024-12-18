@@ -1,7 +1,5 @@
-
-
 function App() {
-    return null; // or return any global providers if needed
+    return null; 
 }
 
 export default App;

@@ -10,7 +10,7 @@ const api = axios.create({
     }
 });
 
-// Add request interceptor
+
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -61,7 +61,7 @@ const Table = () => {
         }
     };
 
-    // Handle artwork approval or rejection
+    // for approval and rejection by admin
     const handleApproval = async (dbId, isApproved) => {
         // If rejecting, open rejection reason modal
         if (!isApproved) {
@@ -132,16 +132,16 @@ const Table = () => {
             );
 
             if (response.data.success) {
-                // Update local state to remove rejected artwork
+                // for removing rejected artworks
                 setArtworks(prevArtworks => 
                     prevArtworks.filter(art => art.dbId !== selectedArtworkId)
                 );
-                // Close rejection modal and reset state
+            
                 setIsRejectionModalOpen(false);
                 setSelectedArtworkId(null);
                 setRejectionReason('');
                 
-                // Show success message
+           
                 alert('Artwork rejected successfully');
             }
         } catch (error) {
