@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Kyc" ALTER COLUMN "lastName" SET DATA TYPE VARCHAR(30);

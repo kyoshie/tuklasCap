@@ -1,31 +1,30 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom"; // Add this import
-import {ethers} from 'ethers';
+import { ethers } from 'ethers';
 import { BACKEND } from '../constant';
+import { CircleAlert } from "lucide-react";
 
 const api = axios.create({
   baseURL: BACKEND,
   headers: {
-      'Content-Type': 'application/json'
+    'Content-Type': 'application/json'
   }
 });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 }, (error) => {
   return Promise.reject(error);
 });
 
-
-
 function CreateNFT() {
-  
-  const CONTRACT_ADDRESS ="0x9EA0B72072E030C7c607e045D2aC383B5118fd20";
+
+  const CONTRACT_ADDRESS = "0x9EA0B72072E030C7c607e045D2aC383B5118fd20";
   const CONTRACT_ABI = [
     {
       "inputs": [
@@ -886,8 +885,8 @@ function CreateNFT() {
       "type": "receive"
     }
   ]
-      
-  const navigate = useNavigate(); 
+
+  const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -896,6 +895,7 @@ function CreateNFT() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [walletAddress, setWalletAddress] = useState("");
+  const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
     const checkConnection = async () => {
@@ -934,22 +934,39 @@ function CreateNFT() {
 
     return () => {
       if (window.ethereum) {
-        window.ethereum.removeListener('accountsChanged', () => {});
+        window.ethereum.removeListener('accountsChanged', () => { });
       }
     };
   }, [navigate]);
 
+  const fetchKycStatus = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await api.get(`${BACKEND}/api/verify/verifiedStatus`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data.success && response.data.data && response.data.data.status === "approved") {
+        setIsVerified(true);
+      } else {
+        setIsVerified(false);
+      }
+    } catch (err) {
+      console.error("Error fetching KYC status", err);
+      setIsVerified(false);
+    }
+  };
+  fetchKycStatus();
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // 10MB limit file or image
-      if (file.size > 10 * 1024 * 1024) { 
+      if (file.size > 10 * 1024 * 1024) {
         setError("File size must be less than 10MB");
         return;
       }
       setImage(file);
       setImageName(file.name);
-      setError(""); 
+      setError("");
     }
   };
 
@@ -957,34 +974,24 @@ function CreateNFT() {
     e.preventDefault();
     setLoading(true);
     setError("");
-  
+
     try {
       if (!window.ethereum) {
         throw new Error("Please install MetaMask");
       }
-  
+
       const walletAddress = localStorage.getItem('walletAddress');
       if (!walletAddress) {
         throw new Error("Please connect your wallet first");
       }
-  
-    
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       const signer = await provider.getSigner();
-  
-      console.log("Wallet Address:", walletAddress);
-      console.log("Contract Address:", CONTRACT_ADDRESS);
-      console.log("ABI:", CONTRACT_ABI);
-      console.log("Signer:", signer);
-  
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-  
-      // Fetch current art count
       const currentCount = await contract.artCount();
       const nextArtId = Number(currentCount) + 1;
-  
-      // Create FormData for artwork submission
+
       const formData = new FormData();
       const token = localStorage.getItem('token');
       formData.append("file", image);
@@ -993,45 +1000,42 @@ function CreateNFT() {
       formData.append("price", price);
       formData.append("walletAddress", walletAddress);
       formData.append("contractId", nextArtId.toString());
-  
-      // Upload to IPFS to get IPFS hash
+
       const uploadResponse = await axios.post(
         `${BACKEND}/api/arts/upload`,
         formData,
         {
           headers: {
             "Content-Type": "multipart/form-data",
-             'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`
           },
         }
       );
-  
-      // Submit to contract using artist's wallet
+
       const tx = await contract.submitArt(
         title,
         uploadResponse.data.ipfsHash,
         ethers.parseEther(price.toString()),
         description
       );
-  
+
       const receipt = await tx.wait();
       console.log('Transaction confirmed:', receipt.transactionHash);
-  
-      // Update artwork with transaction hash
+
       await axios.post(`${BACKEND}/api/arts/update-hash`, {
         artworkId: uploadResponse.data.artwork.dbId,
         transactionHash: receipt.transactionHash
       },
-    {
-      headers: {
-         'Authorization': `Bearer ${token}`
-      }
-    });
-  
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
       console.log(uploadResponse.data);
       alert("Artwork created successfully!");
       navigate('/gallery');
-  
+
     } catch (error) {
       console.error("Error creating NFT:", error);
       setError(error.message || "Failed to create NFT");
@@ -1039,22 +1043,30 @@ function CreateNFT() {
       setLoading(false);
     }
   };
-  
+
   return (
-    <div className="h-[100vh] w-full md:fixed bg-[--background] md:overflow-auto md:justify-center md:items-start md:flex">
-      <div className="max-w-md p-6 mx-4 align-middle bg-white rounded-lg shadow-md md:w-[900px] md:my-6">
-        <h2 className="mb-6 text-3xl font-bold text-center text-gray-900 md:text-center md:mb-3">
+    <div className="flex flex-col items-center justify-center w-full gap-1 min-h-svh bg-[--background]">
+      <div className="flex flex-col gap-2 p-2 mt-2">
+        <h2 className="text-4xl font-bold text-center text-white ">
           Create New NFT
         </h2>
-        
+        <p className="text-md"> Mint your Digital Artwork as an NFT in the Blockchain.</p>
         {walletAddress && (
-          <div className="mb-4 text-center">
-            <p className="text-sm text-gray-600">
+          <div className="mb-2 text-center">
+            <p className="text-sm text-gray-300">
               Connected Wallet: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
             </p>
           </div>
         )}
+      </div>
 
+      {!isVerified && (
+        <div className="flex w-[30%]  gap-2 p-3  text-md justify-center items-center bg-red-900/20 border-red-800 text-red-200 rounded">
+          <CircleAlert /> Please verify your account before creating an NFT.
+        </div>
+      )}
+
+      <div className="max-w-md p-6 mx-4 align-middle bg-white rounded-lg shadow-md md:w-[30rem] md:my-6 overflow-hidden">
         {error && (
           <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 border border-red-400 rounded">
             {error}
@@ -1063,7 +1075,7 @@ function CreateNFT() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block mb-2 text-sm font-bold text-gray-700 md:text-xl" htmlFor="title">
+            <label className="block mb-2 text-sm font-bold text-black md:text-xl" htmlFor="title">
               Title
             </label>
             <input
@@ -1079,7 +1091,7 @@ function CreateNFT() {
           </div>
 
           <div>
-            <label className="block mb-2 text-sm font-bold text-gray-700 md:text-xl" htmlFor="description">
+            <label className="block mb-2 text-sm font-bold text-black md:text-xl" htmlFor="description">
               Description
             </label>
             <textarea
@@ -1095,7 +1107,7 @@ function CreateNFT() {
           </div>
 
           <div>
-            <label className="block mb-2 text-sm font-bold text-gray-700 md:text-xl" htmlFor="price">
+            <label className="block mb-2 text-sm font-bold text-black md:text-xl" htmlFor="price">
               Price (Ethereum)
             </label>
             <input
@@ -1112,7 +1124,7 @@ function CreateNFT() {
           </div>
 
           <div>
-            <label className="block mb-2 text-sm font-bold text-gray-700" htmlFor="image">
+            <label className="block mb-2 text-sm font-bold text-black" htmlFor="image">
               Upload Image
             </label>
             <input
@@ -1134,15 +1146,15 @@ function CreateNFT() {
 
           <button
             type="submit"
-            className={`w-full px-4 py-2 font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 focus:outline-none focus:shadow-outline ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={loading}
+            disabled={!isVerified || loading}
+            className={`w-full px-4 py-2 font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 focus:outline-none focus:shadow-outline ${!isVerified || loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
           >
             {loading ? "Creating..." : "Create NFT"}
           </button>
         </form>
       </div>
+
     </div>
   );
 }

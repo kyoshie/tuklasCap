@@ -21,6 +21,7 @@ model User {
 
   artworks  Artwork[]
   approvals Approval[]
+  Kyc       Kyc?
 }
 
 model Artwork {
@@ -103,4 +104,27 @@ model Sale {
 
   @@index([artworkId])
   @@index([buyerAddress])
+}
+
+model Kyc {
+  id              Int       @id @default(autoincrement())
+  firstName       String    @db.VarChar(30)
+  middleName      String    @db.VarChar(30)
+  lastName        String    @db.VarChar(30)
+  birthDate       DateTime
+  birthPlace      String    @db.VarChar(128)
+  address         String    @db.VarChar(256)
+  validIdPhoto    Bytes
+  status          String    @default("pending")
+  rejectionReason String?
+  submittedAt     DateTime  @default(now())
+  approvedAt      DateTime?
+  isApproved      Boolean   @default(false)
+  isRejected      Boolean   @default(false)
+  gender          String?   @db.VarChar(10)
+  municipality    String?   @db.VarChar(30)
+  userId          Int       @unique
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@index([status])
 }

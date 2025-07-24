@@ -4,7 +4,7 @@ const Guide = () => {
     return (
         
         //for metamask wallet installation
-        <div className='bg-[--backround] min-h-screen py-8 px-4'>
+        <div className='bg-[--background] min-h-screen py-8 px-4'>
             <div className='mb-8'>
                 <h2 className='text-2xl font-bold text-center text-white md:text-3xl md:text-left md:px-5'>
                     What is Metamask Wallet and How to Install?

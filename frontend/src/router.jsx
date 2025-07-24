@@ -10,8 +10,10 @@ import Gallery from './pages/Gallery';
 import Features from './pages/Features';
 import Create from './pages/Create';
 import Admin from './pages/Admin';
+import Verify from "./pages/Verify";
 import ProtectedRoute from './components/ProtectedRoute';
-import Error from './components/Error'; // Make sure you have this component
+import Error from './components/Error'; 
+import Kyc from "./pages/Kyc";
 
 export const router = createBrowserRouter([
     {
@@ -72,9 +74,22 @@ export const router = createBrowserRouter([
         </>
     },
     {
+        path: "/verify",
+        element:<ProtectedRoute>
+            <Homenav />
+            <Verify />
+        </ProtectedRoute>
+    },
+    {
         path: "/admin",
         element: <ProtectedRoute requireAdmin={true}>
             <Admin />
+        </ProtectedRoute>
+    },
+    {
+        path: "/kyc",
+        element: <ProtectedRoute requireAdmin={true}>
+            <Kyc />
         </ProtectedRoute>
     },
 ]);

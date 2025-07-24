@@ -397,198 +397,6 @@ protectedRouter.put('/approval/:artworkId', async (req, res) => {
   }
 });
 
-publicRouter.get('/marketplace', async (req, res) => {
-  try {
-    const listings = await prisma.marketplace.findMany({
-      where: {
-        status: 'LISTED',
-        artwork: {
-          isSold: false
-        }
-      },
-      include: {
-        artwork: {
-          include: {
-            owner: {
-              select: {
-                username: true,
-                walletAddress: true
-              }
-            },
-            Sale: {
-              orderBy: {
-                soldAt: 'desc'
-              },
-              take: 1
-            }
-          }
-        }
-      },
-      orderBy: {
-        listedAt: 'desc'
-      }
-    });
-
-    res.json({
-      success: true,
-      listings: listings.map(listing => ({
-        id: listing.id,
-        tokenId: listing.tokenId,
-        price: listing.price.toString(),
-        listedAt: listing.listedAt,
-        artwork: {
-          id: listing.artwork.dbId,
-          title: listing.artwork.title,
-          description: listing.artwork.description,
-          imageCID: listing.artwork.imageCID,
-          artist: listing.artwork.owner.username || 'Unknown',
-          artistWallet: listing.artwork.owner.walletAddress,
-          lastSalePrice: listing.artwork.Sale[0]?.price.toString() || null,
-          status:listing.status
-        }
-      }))
-    });
-
-  } catch (error) {
-    console.error('Error fetching marketplace listings:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch marketplace listings',
-      error: error.message
-    });
-  }
-});
-
-protectedRouter.post('/marketplace/buy/:marketplaceId',  async (req, res) => {
-  try {
-    const { marketplaceId } = req.params;
-    const { walletAddress, transactionHash } = req.body;
-    const marketId = parseInt(marketplaceId);
-
-    console.log('Processing purchase:', {
-      marketId,
-      walletAddress,
-      transactionHash
-    });
-
-    // Validate wallet address
-    if (!walletAddress || !ethers.utils.isAddress(walletAddress)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid wallet address"
-      });
-    }
-
-    // Check if transactionHash is provided
-    if (!transactionHash) {
-      return res.status(400).json({
-        success: false,
-        message: "Transaction hash is required"
-      });
-    }
-
-    // Get marketplace listing with artwork details
-    const listing = await prisma.marketplace.findUnique({
-      where: { id: marketId },
-      include: {
-        artwork: {
-          include: {
-            owner: true
-          }
-        }
-      }
-    });
-
-    if (!listing) {
-      return res.status(404).json({
-        success: false,
-        message: "Listing not found"
-      });
-    }
-
-    // Check if buyer is the artist
-    if (listing.artwork.owner.walletAddress.toLowerCase() === walletAddress.toLowerCase()) {
-      return res.status(403).json({
-        success: false,
-        message: "Artists cannot purchase their own artworks"
-      });
-    }
-
-    // Verify transaction using the specified provider
-    const provider = new ethers.providers.JsonRpcProvider(process.env.ARBITRUM_SEPOLIA_URL);
-    
-    try {
-      const receipt = await provider.getTransactionReceipt(transactionHash);
-
-      if (!receipt || !receipt.status) {
-        return res.status(400).json({
-          success: false,
-          message: "Transaction not found or failed"
-        });
-      }
-
-      console.log('Transaction verified, processing database updates...');
-
-      // Process the purchase in a transaction
-      const result = await prisma.$transaction(async (prisma) => {
-        // Update artwork status
-        const updatedArtwork = await prisma.artwork.update({
-          where: { dbId: listing.artwork.dbId },
-          data: {
-            isSold: true,
-            soldAt: new Date()
-          }
-        });
-
-        // Create sale record
-        const sale = await prisma.sale.create({
-          data: {
-            artworkId: listing.artwork.dbId,
-            buyerAddress: walletAddress,
-            price: listing.price,
-            transactionHash: transactionHash,
-          }
-        });
-
-        // Delete the marketplace listing
-        await prisma.marketplace.delete({
-          where: { id: marketId }
-        });
-
-        return { updatedArtwork, sale };
-      });
-
-      console.log('Purchase completed successfully:', result);
-
-      res.json({
-        success: true,
-        message: 'NFT purchased successfully',
-        saleDetails: {
-          artworkId: result.updatedArtwork.dbId,
-          price: result.sale.price.toString(),
-          buyer: walletAddress,
-          transactionHash: result.sale.transactionHash
-        }
-      });
-
-    } catch (receiptError) {
-      console.error('Error fetching transaction receipt:', receiptError);
-      return res.status(400).json({
-        success: false,
-        message: 'Failed to verify transaction hash',
-        error: receiptError.message
-      });
-    }
-
-  } catch (error) {
-    console.error('Error processing purchase:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to process purchase',
-      error: error.message
-    });
-  }
-});
 
 
 protectedRouter.delete('/marketplace/cancel/:marketplaceId', authMiddleware(), async (req, res) => {
@@ -771,5 +579,75 @@ protectedRouter.post('/marketplace/relist/:artworkId', authMiddleware(), async (
     });
   }
 });
+
+publicRouter.get('/marketplace', async (req, res) => {
+  try {
+    const listings = await prisma.marketplace.findMany({
+      where: {
+        status: 'LISTED',
+        artwork: {
+          isSold: false
+        }
+      },
+      include: {
+        artwork: {
+          include: {
+            owner: {
+              select: {
+                username: true,
+                walletAddress: true,
+                Kyc: {
+                  select: {
+                    isApproved: true
+                  }
+                }
+              }
+            },
+            Sale: {
+              orderBy: {
+                soldAt: 'desc'
+              },
+              take: 1
+            }
+          }
+        }
+      },
+      orderBy: {
+        listedAt: 'desc'
+      }
+    });
+    
+    const mappedListings = listings.map(listing => ({
+      id: listing.id,
+      tokenId: listing.tokenId,
+      price: listing.price.toString(),
+      listedAt: listing.listedAt,
+      artwork: {
+        id: listing.artwork.dbId,
+        title: listing.artwork.title,
+        description: listing.artwork.description,
+        imageCID: listing.artwork.imageCID,
+        artist: listing.artwork.owner.username || 'Unknown',
+        artistWallet: listing.artwork.owner.walletAddress,
+        artistApproved: listing.artwork.owner.Kyc?.isApproved || false,
+        lastSalePrice: listing.artwork.Sale[0]?.price.toString() || null,
+        status: listing.status
+      }
+    }));
+
+    res.json({
+      success: true,
+      listings: mappedListings
+    });
+  } catch (error) {
+    console.error('Error fetching marketplace listings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch marketplace listings',
+      error: error.message
+    });
+  }
+});
+
 
 export { publicRouter, protectedRouter };

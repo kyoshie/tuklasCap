@@ -1,12 +1,12 @@
-import { Home, LogOut, Library } from 'lucide-react';
-import Table from '../components/table/Table';
+import { Home, LogOut, Pyramid} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import KycTable from '../components/table/Kyc-Table';
 
 
-const Admin = () => {
+const KYC = () => {
     const navigate = useNavigate();
-
+    
     useEffect(() => {
         const walletAddress = localStorage.getItem('walletAddress');
         if (!walletAddress) {
@@ -33,15 +33,15 @@ const Admin = () => {
             <aside className="w-64 shadow-md bg-[--background]">
                 <div className="p-4 text-xl font-bold text-white">Tuklas Administrator</div>
                 <nav className="mt-4">
-                    <a className="flex items-center px-4 py-2 text-[--orange] hover:bg-gray-800 transition-colors duration-200 cursor-pointer">
+                    <a className="flex items-center px-4 py-2 text-[--orange] hover:bg-gray-800 transition-colors duration-200 cursor-pointer" href='/admin'>
                         <Home className="w-5 h-5 mr-3" />
                         Arts Submissions
                     </a>
                     <a className="flex items-center px-4 py-2 text-[--orange] hover:bg-gray-800 transition-colors duration-200 cursor-pointer" href='/kyc'>
-                        <Library className="w-5 h-5 mr-3" />
+                        <Pyramid className="w-5 h-5 mr-3" />
                         KYC Submissions
                     </a>
-                    <button
+                    <button 
                         onClick={handleLogout}
                         className="flex items-center w-full px-4 py-2 text-red-300 transition-colors duration-200 cursor-pointer hover:bg-gray-800"
                     >
@@ -64,10 +64,10 @@ const Admin = () => {
                 <div className="p-6">
                     <div className="p-6 bg-white rounded-lg shadow-md">
                         <h2 className="mb-4 text-xl font-semibold text-gray-800">Welcome Tuklas Admin Dashboard</h2>
-                        <p className="text-gray-400">This is the Tuklas Admin Dashboard. Artworks are being accepted here.</p>
+                        <p className="text-gray-400">This is the Tuklas Admin Dashboard. Information are verified here.</p>
                     </div>
                     <div className='mt-10'>
-                        <Table />
+                        <KycTable />
                     </div>
                 </div>
             </main>
@@ -75,4 +75,4 @@ const Admin = () => {
     );
 };
 
-export default Admin;
+export default KYC;

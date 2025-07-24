@@ -9,7 +9,6 @@ dotenv.config();
 const prisma = new PrismaClient();
 const protectedRouter = express.Router();
 
-
 const provider = new ethers.providers.JsonRpcProvider(process.env.ARBITRUM_SEPOLIA_URL);
 const contractAddress = process.env.CONTRACT_ADDRESS;
 
@@ -65,17 +64,13 @@ protectedRouter.get('/artworks', authMiddleware(['ADMIN']), async (req, res) => 
     });
   }
 });
-
-
-
-
 // api for approval
 protectedRouter.patch('/approve/:dbId', authMiddleware(['ADMIN']), async (req, res) => {
     try {
       const dbId = req.params.dbId;
       const approved = req.body.approved;
       const adminId = req.body.adminId;
-      const reason = req.body.reason || 'No reason provided';  // Default reason if not provided
+      const reason = req.body.reason || 'No reason provided';  
   
       const artworkDbId = parseInt(dbId);
   
