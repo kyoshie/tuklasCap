@@ -1,5 +1,6 @@
 Tuklas - NFT Marketplace Platform
 Tuklas is a decentralized NFT marketplace that empowers artists to mint, showcase, and sell their digital artwork while ensuring authenticity through a robust KYC verification system.
+
 Features
 
 1. Artwork Submission & Approval - Artists can upload digital artwork for admin review and approval
