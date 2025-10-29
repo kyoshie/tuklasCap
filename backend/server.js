@@ -42,7 +42,7 @@
     app.use('/api/verify', kycRoutes);
 
     // Error handling middleware
-    app.use((err, req, res, next) => {
+    app.use((err, res) => {
         console.error(err.stack);
         
         // Handle specific error types
@@ -70,7 +70,7 @@
     });
 
     // Handle 404 routes
-    app.use((req, res) => {
+    app.use((res) => {
         res.status(404).json({
             success: false,
             message: "Route not found"
