@@ -895,7 +895,7 @@ function CreateNFT() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [walletAddress, setWalletAddress] = useState("");
-  const [isVerified, setIsVerified] = useState(false);
+  const [isVerified, setIsVerified] = useState(null);
 
   useEffect(() => {
     const checkConnection = async () => {
@@ -939,23 +939,26 @@ function CreateNFT() {
     };
   }, [navigate]);
 
-  const fetchKycStatus = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await api.get(`${BACKEND}/api/verify/verifiedStatus`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.data.success && response.data.data && response.data.data.status === "approved") {
-        setIsVerified(true);
-      } else {
+  useEffect(() => {
+    const fetchKycStatus = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await api.get(`${BACKEND}/api/verify/verifiedStatus`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.data.success && response.data.data?.status === "approved") {
+          setIsVerified(true);
+        } else {
+          setIsVerified(false);
+        }
+      } catch (err) {
+        console.error("Error fetching KYC status", err);
         setIsVerified(false);
       }
-    } catch (err) {
-      console.error("Error fetching KYC status", err);
-      setIsVerified(false);
-    }
-  };
-  fetchKycStatus();
+    };
+
+    fetchKycStatus();
+  }, []);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -1060,7 +1063,7 @@ function CreateNFT() {
         )}
       </div>
 
-      {!isVerified && (
+      {isVerified === false && (
         <div className="flex w-[30%]  gap-2 p-3  text-md justify-center items-center bg-red-900/20 border-red-800 text-red-200 rounded">
           <CircleAlert /> Please verify your account before creating an NFT.
         </div>

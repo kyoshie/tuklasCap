@@ -28,6 +28,7 @@
 html, body{
     height: 100%;
     width: 100%;
+   
 }
 
 html {
@@ -35,4 +36,8 @@ html {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+     scroll-behavior: smooth;
 }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
